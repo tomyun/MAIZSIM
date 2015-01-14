@@ -16,6 +16,8 @@
 #include "gas_exchange.h"
 #include  <cmath>
 #include <stdlib.h>
+#include <fstream>
+#include <json/json.h>
 
 #define R 8.314  // idealgasconstant
 #define maxiter 200
@@ -40,6 +42,7 @@ CGas_exchange::~CGas_exchange()
 
 void CGas_exchange::getParms()
 {
+	/*
 	Parms.EaVp     =        75100;
 	Parms.EaVc     =        55900; // Sage (2002) JXB
 	Parms.Eaj      =        32800;
@@ -63,6 +66,36 @@ void CGas_exchange::getParms()
 	Parms.lamda_r = 4.0e-12; // Dewar's email
 	Parms.lamda_l = 1.0e-12; 
 	Parms.K_max = 6.67e-3; //max. xylem conductance (mol m-2 s-1 MPa-1) from root to leaf, Dewar (2002);
+	*/
+
+	std::ifstream in("gas_exchange.json");
+	Json::Value root;
+	Json::Reader reader;
+	bool parsing_success = reader.parse(in, root);
+	if (!parsing_success) {
+		std::cout << "Failed to parse configuration\n"
+				  << reader.getFormatedErrorMessages();
+		return;
+	}
+
+	Parms.EaVp = root["EaVp"].asDouble();
+	Parms.EaVc = root["EaVc"].asDouble();
+	Parms.Eaj = root["Eaj"].asDouble();
+	Parms.Hj = root["Hj"].asDouble();
+	Parms.Sj = root["Sj"].asDouble();
+	Parms.Vpm25 = root["Vpm25"].asDouble();
+	Parms.Vcm25 = root["Vcm25"].asDouble();
+	Parms.Jm25 = root["Jm25"].asDouble();
+	Parms.Rd25 = root["Rd25"].asDouble();
+	Parms.Ear = root["Ear"].asDouble();
+	Parms.g0 = root["g0"].asDouble();
+	Parms.g1 = root["g1"].asDouble();
+	Parms.beta_ABA = root["beta_ABA"].asDouble();
+	Parms.delta = root["delta"].asDouble();
+	Parms.a_ABA = root["a_ABA"].asDouble();
+	Parms.lamda_r = root["lamda_r"].asDouble();
+	Parms.lamda_l = root["lamda_l"].asDouble();
+	Parms.K_max = root["K_max"].asDouble();
 }
 
 	
