@@ -1,0 +1,12 @@
+# symlinks to sources
+soil
+crop
+
+# symlinks to libraries
+soil.so
+_crop.so
+crop.py
+crop.pyc
+
+# IPython notebook
+.ipynb_checkpoints/
