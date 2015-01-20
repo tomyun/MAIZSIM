@@ -50,7 +50,7 @@ public:
 	char* getLogFile() {return logFile;}
 	CPlant * getPlant() {return plant;}
 
-	void addOutputMessage(char*);
+	//void addOutputMessage(char*);
     void readWeatherFrom2DSOIL(const TWeather &);
 	void outputToCropFile();
 	void outputToLeafFile();

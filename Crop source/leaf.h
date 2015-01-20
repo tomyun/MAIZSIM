@@ -43,10 +43,10 @@ public:
 	void set_SLA(double x) {SLA=x;}
 	void set_TotalGrowingLeaves(int x) {TotalGrowingLeaves=x;}
 	void set_TotalDroppedLeaves(int x) {TotalDroppedLeaves=x;}
-	double GTI(double);
+	//double GTI(double);
 	void set_RelativeAreaIncrease(double x) {RelativeAreaIncrease=x;}
 	void update(CDevelopment *, double pdlwp);
-	void elongate(CDevelopment *, double pdlwp);
+	//void elongate(CDevelopment *, double pdlwp);
 	void expand(CDevelopment *, double pdlwp);
 //	void senescence(CDevelopment *);
 	void senescence(CDevelopment *, double pdlwp);
@@ -54,7 +54,7 @@ public:
 	void set_GDD2mature(double x) {GDD2mature=x;}
 
 	void calc_dimensions(CDevelopment * dv);
-	void calcLongevity(double pdlwp);
+	//void calcLongevity(double pdlwp);
 	double LWPeffect(double predawn_psil, double threshold);
 
 private:

@@ -74,7 +74,7 @@ public:
 
 	void setMass();
 	void set_age(double x) {age=x;}
-	void set_CH2O();
+	//void set_CH2O();
 	void set_N(double x) {TotalNitrogen= x;} // Units are grams. Was scaled from mg in crop.cpp
 	void set_HourlyNitrogenDemand (double x) {HourlyNitrogenDemand=x;}
 	void set_CumulativeNitrogenDemand (double x) {CumulativeNitrogenDemand=x;}
@@ -99,10 +99,10 @@ public:
 	double calcPotentialLeafAreaIncrease(void);//calculate potential leaf area increase without carbon limitation YY
 	void calcPerLeafRelativeAreaIncrease();
 	double calcSenescentLeafArea();
-	double calcDroppedLeafArea();
-	double calcGreenLeafArea2(); // empirical fit of plant green leaf area from SPAR 02 field exp
+	//double calcDroppedLeafArea();
+	//double calcGreenLeafArea2(); // empirical fit of plant green leaf area from SPAR 02 field exp
     double calcPotentialCarbondemand(); //calculate potential carbon demand for potential leaf growth YY
-	void grow();
+	//void grow();
 	void C_allocation(const TWeather&);
 	void writeNote(const TWeather &);
     
