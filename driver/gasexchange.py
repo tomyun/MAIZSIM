@@ -375,6 +375,7 @@ class GasExchange:
         res = scipy.optimize.minimize(cost, [tleaf], options={'disp': True})
         tleaf = res.x[0]
 
+        a_net = self.photosynthesis.photosynthesize(self.atmos.pfd, self.atmos.press, self.atmos.co2, self.atmos.rh, leafp, tleaf)
         self.tleaf = tleaf
 
         cm = self.photosynthesis._co2_mesophyll(a_net, self.atmos.press, self.atmos.co2, self.stomata)
