@@ -30,6 +30,13 @@ class Atmosphere:
         a = 0.611 # kPa
         b = 17.502
         c = 240.97 # C
+
+        #FIXME August-Roche-Magnus formula gives slightly different parameters
+        # https://en.wikipedia.org/wiki/Clausius–Clapeyron_relation
+        #a = 0.61094 # kPa
+        #b = 17.625
+        #c = 243.04 # C
+
         return a*np.exp((b*t)/(c+t))
 
 
