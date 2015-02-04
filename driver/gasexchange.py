@@ -349,13 +349,13 @@ class GasExchange:
         self.stomata.update_boundary_layer(self.width, self.wind)
 
         #FIXME need initalization?
-        self.a_net = 0.
+        a_net = 0.
         tleaf = self.tair
-        self.stomata.update_stomata(leafp, self.co2, self.a_net, self.rh, tleaf)
+        self.stomata.update_stomata(leafp, self.co2, a_net, self.rh, tleaf)
 
         p = self.press
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
-        self.a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
+        a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
         def eb(tleaf):
             pass
@@ -368,7 +368,7 @@ class GasExchange:
         while abs(tleaf_old - tleaf) > 0.01 and i < MAXITER:
             tleaf_old = tleaf
             #FIXME minimize side-effects in _photosynthesis()
-            self.a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, tleaf)
+            a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, tleaf)
             tleaf = self._energybalance(et_supply)
             i += 1
             #FIXME remove
@@ -376,11 +376,12 @@ class GasExchange:
 
         self.tleaf = tleaf
 
-        cm = self.photosynthesis._co2_mesophyll(self.a_net, self.press, self.co2, self.stomata)
+        cm = self.photosynthesis._co2_mesophyll(a_net, self.press, self.co2, self.stomata)
         self.ci = cm
 
         rd = self.photosynthesis._dark_respiration(tleaf)
-        self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+        self.a_gross = max(0, a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+        self.a_net = a_net
 
         self._evapotranspiration(self.tair, tleaf)
 
