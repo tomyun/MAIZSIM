@@ -113,7 +113,7 @@ class Stomata:
         return self.gb
 
     # stomatal conductance for water vapor in mol m-2 s-1
-    def update_stomata(self, pressure, co2, a_net, rh, tleaf):
+    def update_stomata(self, lwp, co2, a_net, rh, tleaf):
         # params
         g0 = self.g0
         g1 = self.g1
@@ -124,7 +124,7 @@ class Stomata:
         if cs <= gamma:
             cs = gamma + 1
 
-        temp = self._set_leafp_effect(pressure)
+        temp = self._set_leafp_effect(lwp)
 
         aa = temp * g1 * a_net / cs
         bb = g0 + gb - (temp * g1 * a_net / cs)
@@ -141,15 +141,15 @@ class Stomata:
 
         # this below is an example of how you can write temporary data to a debug window. It can be copied and
         # pasted into excel for plotting. Dennis See above where the CString object is created.
-        print("tmp = %f pressure = %f Ds= %f Tleaf = %f Cs = %f Anet = %f hs = %f RH = %f" % (tmp, pressure, ds, tleaf, cs, a_net, hs, rh))
+        print("tmp = %f LWP = %f Ds= %f Tleaf = %f Cs = %f Anet = %f hs = %f RH = %f" % (tmp, lwp, ds, tleaf, cs, a_net, hs, rh))
         self.gs = tmp
         return self.gs
 
-    def _set_leafp_effect(self, pressure):
+    def _set_leafp_effect(self, lwp):
         # pressure - leaf water potential MPa...
         sf = 2.3 # sensitivity parameter Tuzet et al. 2003 Yang
         phyf = -1.2 # reference potential Tuzet et al. 2003 Yang
-        self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - pressure)))
+        self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - lwp)))
         return self.leafp_effect
 
     def total_conductance_h20(self):
@@ -258,8 +258,8 @@ class Photosynthesis:
                          / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
 
     # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
-    #FIXME remove dependency on leaf parameters (pressure=LWP, tleaf)
-    def photosynthesize(self, pfd, press, co2, rh, pressure, tleaf):
+    #FIXME remove dependency on leaf parameters (LWP, tleaf)
+    def photosynthesize(self, pfd, press, co2, rh, lwp, tleaf):
         # Light response function parameters
         i2 = self._light(pfd)
 
@@ -282,7 +282,7 @@ class Photosynthesis:
             gbs = 0.003 # bundle sheath conductance to CO2, mol m-2 s-1
             #gi = 1.0 # conductance to CO2 from intercelluar to mesophyle, mol m-2 s-1, assumed
 
-            self.stomata.update_stomata(pressure, co2, a_net, rh, tleaf)
+            self.stomata.update_stomata(lwp, co2, a_net, rh, tleaf)
             cm = self._co2_mesophyll(a_net, press, co2, self.stomata)
 
             def enzyme_limited():
@@ -340,7 +340,7 @@ class Photosynthesis:
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         res = scipy.optimize.minimize(cost, [0], options={'disp': True})
         a_net = res.x[0]
-        self.stomata.update_stomata(pressure, co2, a_net, rh, tleaf)
+        self.stomata.update_stomata(lwp, co2, a_net, rh, tleaf)
         return a_net
 
 
