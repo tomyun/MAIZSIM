@@ -137,12 +137,188 @@ class Stomata:
         return self.boundary_layer_resistance_co2() + self.stomatal_resistance_co2()
 
 
+class Photosynthesis:
+    def __init__(self, stomata, leaf_n_content):
+        self.setup()
+        self.stomata = stomata
+        self.leaf_n_content = leaf_n_content
+
+    def setup(self):
+        # activation energy values
+        self.eac = 59400.
+        self.eao = 36000.
+
+        self.eavp = 75100.
+        self.eavc = 55900. # Sage (2002) JXB
+        self.eaj = 32800.
+
+        self.hj = 220000.
+        self.sj = 702.6
+
+        self.kc25 = 650. # Michaelis constant of rubisco for CO2 of C4 plants (2.5 times that of tobacco), ubar, Von Caemmerer 2000
+        self.ko25 = 450. # Michaelis constant of rubisco for O2 (2.5 times C3), mbar
+        self.kp25 = 80. # Michaelis constant for PEP caboxylase for CO2
+
+        # Kim et al. (2007), Kim et al. (2006)
+        # In von Cammerer (2000), Vpm25=120, Vcm25=60,Jm25=400
+        # In Soo et al.(2006), under elevated C5O2, Vpm25=91.9, Vcm25=71.6, Jm25=354.2 YY
+        self.vpm25 = 70.
+        self.vcm25 = 50.
+        self.jm25 = 300.
+
+        # Values in Kim (2006) are for 31C, and the values here are normalized for 25C. SK
+        self.rd25 = 2.
+        self.ear = 39800.
+
+    def _light(self, pfd):
+        #FIXME make scatt global parameter?
+        scatt = 0.15 # leaf reflectance + transmittance
+        f = 0.15 #spectral correction
+
+        ia = pfd * (1 - scatt) # absorbed irradiance
+        i2 = ia * (1 - f) / 2. # useful light absorbed by PSII
+        return i2
+
+    # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
+    def _co2_mesophyll(self, a_net, press, co2, stomata):
+        p = press / 100.
+        ca = co2 * p # conversion to partial pressure
+        cm = ca - a_net * stomata.total_resistance_co2() * p
+        return np.clip(cm, 0., 2*ca)
+
+    # Arrhenius equation
+    def _temperature_dependence_rate(self, Ea, T, Tb=25.):
+        R = 8.314 # universal gas constant (J K-1 mol-1)
+        K = 273.
+        return np.exp(Ea * (T - Tb) / ((Tb + K) * R * (T + K)))
+
+    def _nitrogen_limited_rate(self, N):
+        # in Sinclair and Horie, 1989 Crop sciences, it is 4 and 0.2
+        # In J Vos. et al. Field Crop study, 2005, it is 2.9 and 0.25
+        # In Lindquist, weed science, 2001, it is 3.689 and 0.5
+        s = 2.9 # slope
+        N0 = 0.25
+        return 2 / (1 + np.exp(-s * (max(N0, N) - N0))) - 1
+
+    def _dark_respiration(self, tleaf):
+        return self.rd25 * self._temperature_dependence_rate(self.ear, tleaf)
+
+    def _maximum_electron_transport_rate(self, T, N):
+        R = 8.314
+
+        Tb = 25.
+        K = 273.
+        Tk = T + K
+        Tbk = Tb + K
+
+        Sj = self.sj
+        Hj = self.hj
+
+        return self.jm25 * self._nitrogen_limited_rate(N) \
+                         * self._temperature_dependence_rate(self.eaj, T) \
+                         * (1 + np.exp((Sj*Tbk - Hj) / (R*Tbk))) \
+                         / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
+
+    # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
+    #FIXME remove dependency on leaf parameters (pressure=LWP, tleaf)
+    def photosynthesize(self, pfd, press, co2, rh, pressure, tleaf):
+        # Light response function parameters
+        i2 = self._light(pfd)
+
+        o = 210. # gas units are mbar
+        om = o # mesophyll O2 partial pressure
+
+        kp = self.kp25 # T dependence yet to be determined
+        kc = self.kc25 * self._temperature_dependence_rate(self.eac, tleaf)
+        ko = self.ko25 * self._temperature_dependence_rate(self.eao, tleaf)
+        km = kc * (1 + om / ko) # effective M-M constant for Kc in the presence of O2
+
+        rd = self._dark_respiration(tleaf)
+        rm = 0.5 * rd
+
+        vpmax = self.vpm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.eavp, tleaf)
+        vcmax = self.vcm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.eavc, tleaf)
+        jmax  = self._maximum_electron_transport_rate(tleaf, self.leaf_n_content)
+
+        def c4(a_net, press, co2, rh, tleaf):
+            gbs = 0.003 # bundle sheath conductance to CO2, mol m-2 s-1
+            #gi = 1.0 # conductance to CO2 from intercelluar to mesophyle, mol m-2 s-1, assumed
+
+            self.stomata.update_stomata(pressure, co2, a_net, rh, tleaf)
+            cm = self._co2_mesophyll(a_net, press, co2, self.stomata)
+
+            def enzyme_limited():
+                # PEP carboxylation rate, that is the rate of C4 acid generation
+                vp1 = (cm * vpmax) / (cm + kp)
+                vp2 = vpr = 80. # PEP regeneration limited Vp, value adopted from vC book
+                vp = max(min(vp1, vp2), 0)
+
+                #FIXME where should gamma be at?
+                # half the reciprocal of rubisco specificity, to account for O2 dependence of CO2 comp point,
+                # note that this become the same as that in C3 model when multiplied by [O2]
+                #gamma1 = 0.193
+                #gamma_star = gamma1 * os
+                #gamma = (rd*km + vcmax*gamma_star) / (vcmax - rd)
+
+                # Enzyme limited A (Rubisco or PEP carboxylation
+                ac1 = vp + gbs*cm - rm
+                #ac1 = max(0, ac1) # prevent Ac1 from being negative Yang 9/26/06
+                ac2 = vcmax - rd
+                ac = min(ac1, ac2)
+                return ac
+            ac = enzyme_limited()
+
+            # Light and electron transport limited A mediated by J
+            def transport_limited():
+                theta = 0.5
+                j = min(np.roots([theta, -(i2+jmax), i2*jmax])) # rate of electron transport
+                x = 0.4 # Partitioning factor of J, yield maximal J at this value
+                aj1 = x*j/2. - rm + gbs*cm
+                aj2 = (1 - x)*j/3. - rd
+                aj = min(aj1, aj2)
+                return aj
+            aj = transport_limited()
+
+            def combined(ac, aj):
+                beta = 0.99 # smoothing factor
+                # smooting the transition between Ac and Aj
+                return ((ac+aj) - ((ac+aj)**2 - 4*beta*ac*aj)**0.5) / (2*beta)
+            a_net = combined(ac, aj)
+
+            #FIXME put them accordingly
+            def bundle_sheath():
+                alpha = 0.0001 # fraction of PSII activity in the bundle sheath cell, very low for NADP-ME types
+                os = alpha * a_net / (0.047*gbs) + om # Bundle sheath O2 partial pressure, mbar
+                #cbs = cm + (vp - a_net -rm) / gbs # Bundle sheath CO2 partial pressure, ubar
+
+            return a_net
+
+        def cost(x):
+            a_net0 = x[0]
+            a_net1 = c4(a_net0, press, co2, rh, tleaf)
+            return (a_net0 - a_net1)**2
+
+        #FIXME avoid passing self.stomata object to optimizer
+        # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
+        #FIXME would it be okay to access self.a_net here?
+        res = scipy.optimize.minimize(cost, [9999999], options={'disp': True})
+        a_net = res.x[0]
+        self.stomata.update_stomata(pressure, co2, a_net, rh, tleaf)
+        return a_net
+
+        cm = co2_mesophyll(self.a_net, press, co2, self.stomata)
+        self.ci = cm
+
+        self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+
+
 class GasExchange:
     def __init__(self, s_type, n_content):
         self.s_type = s_type
         self.leaf_n_content = n_content
 
         self.stomata = Stomata()
+        self.photosynthesis = Photosynthesis(self.stomata, self.leaf_n_content)
 
     def set_val_psil(self, pfd, tair, co2, rh, wind, press, width, leafp, et_supply):
         scatt = 0.15
@@ -168,6 +344,7 @@ class GasExchange:
         self._gasex_psil(leafp, et_supply)
 
     def _setup_parms(self):
+        #FIXME move most of them into Photosynthesis class
         self.eavp = 75100
         self.eavc = 55900 # Sage (2002) JXB
         self.eaj = 32800
@@ -206,16 +383,34 @@ class GasExchange:
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
         self.a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
+        def eb(tleaf):
+            pass
+
+        def cost(x):
+            pass
+
         i = 1
         tleaf_old = 0.
         while abs(tleaf_old - self.tleaf) > 0.01 and i < MAXITER:
             tleaf_old = self.tleaf
-            self._photosynthesis(leafp, self.tleaf)
+            #FIXME minimize side-effects in _photosynthesis()
+            #self._photosynthesis(leafp, self.tleaf)
+
+            self.a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, self.tleaf)
+
+            cm = self.photosynthesis._co2_mesophyll(self.a_net, self.press, self.co2, self.stomata)
+            self.ci = cm
+
+            rd = self.photosynthesis._dark_respiration(self.tleaf)
+            self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+
             self.tleaf = self._energybalance(et_supply)
-            self._evapotranspiration(self.tair, self.tleaf)
+
+            #self._evapotranspiration(self.tair, self.tleaf)
             i += 1
             #FIXME remove
             self.iter2 = i
+        self._evapotranspiration(self.tair, self.tleaf)
 
     # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
     def _photosynthesis(self, pressure, tleaf):
@@ -332,6 +527,7 @@ class GasExchange:
             a_net1 = c4(a_net0, self.co2, self.rh, self.tleaf)
             return (a_net0 - a_net1)**2
 
+        #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         res = scipy.optimize.minimize(cost, [self.a_net], options={'disp': True})
         self.a_net = res.x[0]
