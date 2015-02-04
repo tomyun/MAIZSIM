@@ -19,6 +19,42 @@ import scipy.optimize
 EPS = 0.97
 SBC = 5.6697e-8
 
+class VaporPressure:
+    # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
+    a = 0.611 # kPa
+    b = 17.502 # C
+    c = 240.97 # C
+
+    #FIXME August-Roche-Magnus formula gives slightly different parameters
+    # https://en.wikipedia.org/wiki/Clausius–Clapeyron_relation
+    #a = 0.61094 # kPa
+    #b = 17.625 # C
+    #c = 243.04 # C
+
+    @classmethod
+    def saturation(cls, t):
+        a, b, c = cls.a, cls.b, cls.c
+        return a*np.exp((b*t)/(c+t))
+
+    @classmethod
+    def ambient(cls, t, rh):
+        es = cls.saturation(t)
+        return es * rh
+
+    @classmethod
+    def deficit(cls, t, rh):
+        es = cls.saturation(t)
+        return es * (1 - rh)
+
+    # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
+    @classmethod
+    def curve_slope(cls, t, press):
+        es = cls.saturation(t)
+        b, c = cls.b, cls.c
+        slope = es * (b*c)/(c+t)**2 / press
+        return slope
+
+
 class Atmosphere:
     def __init__(self, pfd, tair, co2, rh, wind, press):
         self.setup(pfd, tair, co2, rh, wind, press)
@@ -39,31 +75,6 @@ class Atmosphere:
         self.tair = tair # C
         self.wind = wind # meters s-1
         self.press = press # kPa
-
-    @classmethod
-    def saturation_vapor_pressure(cls, t):
-        # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
-        a = 0.611 # kPa
-        b = 17.502
-        c = 240.97 # C
-
-        #FIXME August-Roche-Magnus formula gives slightly different parameters
-        # https://en.wikipedia.org/wiki/Clausius–Clapeyron_relation
-        #a = 0.61094 # kPa
-        #b = 17.625
-        #c = 243.04 # C
-
-        return a*np.exp((b*t)/(c+t))
-
-    @classmethod
-    def vapor_pressure(cls, t, rh):
-        es = cls.saturation_vapor_pressure(t)
-        return es * rh
-
-    @classmethod
-    def vapor_pressure_deficit(cls, t, rh):
-        es = cls.saturation_vapor_pressure(t)
-        return es * (1 - rh)
 
 
 class Stomata:
@@ -122,9 +133,9 @@ class Stomata:
         hs = max(np.roots([aa, bb, cc]))
         hs = np.clip(hs, 0.3, 1.) # preventing bifurcation
 
-        #es = Atmosphere.saturation_vapor_pressure(tleaf)
+        #es = VaporPressure.saturation(tleaf)
         #ds = (1 - hs) * es # VPD at leaf surface
-        ds = Atmosphere.vapor_pressure_deficit(tleaf, hs)
+        ds = VaporPressure.deficit(tleaf, hs)
         tmp = g0 + (g1 *temp * (a_net * hs / cs))
         tmp = max(tmp, g0)
 
@@ -412,8 +423,8 @@ class GasExchange:
 
         # debug dt I commented out the changes that yang made for leaf temperature for a test. I don't think they work
         if jw == 0:
-            vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
-            tleaf = ta + (psc1 / (self._slope(ta) + psc1)) * ((r_abs - thermal_air) / (ghr * cp) - vpd / (psc1 * press)) # eqn 14.6b linearized form using first order approximation of Taylor series
+            vpd = VaporPressure.deficit(ta, rh)
+            tleaf = ta + (psc1 / (VaporPressure.curve_slope(ta, press) + psc1)) * ((r_abs - thermal_air) / (ghr * cp) - vpd / (psc1 * press)) # eqn 14.6b linearized form using first order approximation of Taylor series
         else:
             tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
         return tleaf
@@ -424,24 +435,11 @@ class GasExchange:
         rh = self.atmos.rh
         press = self.atmos.press
 
-        self.vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
+        self.vpd = VaporPressure.deficit(ta, rh)
 
         gv = self.stomata.total_conductance_h20()
-        ea = Atmosphere.vapor_pressure(ta, rh) # ambient vapor pressure
-        es_leaf = Atmosphere.saturation_vapor_pressure(tleaf)
+        ea = VaporPressure.ambient(ta, rh)
+        es_leaf = VaporPressure.saturation(tleaf)
         et = gv * ((es_leaf - ea) / press) / (1 - (es_leaf + ea) / press)
         et = max(0., et) # 04/27/2011 dt took out the 1000 everything is moles now
         self.et = et
-
-    # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
-    def _slope(self, t):
-        # variables
-        press = self.atmos.press
-
-        # units of b and c are  degrees C
-        b = 17.502
-        c = 240.97
-
-        es = Atmosphere.saturation_vapor_pressure(t)
-        slope = es * (b*c) / (c + t)**2 / press
-        return slope
