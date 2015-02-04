@@ -63,6 +63,8 @@ class Stomata:
         self.gb = 0. # boundary layer conductance
         self.gs = 0. # stomatal conductance
 
+        self.leafp_effect = 1 # At first assume there is not drought stress, so assign 1 to leafpEffect. Yang 8/20/06
+
     def update_boundary_layer(self, width, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
         sr = 1.0
@@ -337,7 +339,6 @@ class GasExchange:
         self.wind = wind # meters s-1
         self.press = press # kPa
         self.leafp = leafp
-        self.leafp_effect = 1 # At first assume there is not drought stress, so assign 1 to leafpEffect. Yang 8/20/06
 
         # override GasEx() function so as to pass leaf water potential
         self._gasex_psil(leafp, et_supply)
