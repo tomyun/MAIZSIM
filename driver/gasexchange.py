@@ -25,8 +25,8 @@ class Atmosphere:
     def __init__(self):
         pass
 
-    @staticmethod
-    def saturation_vapor_pressure(t):
+    @classmethod
+    def saturation_vapor_pressure(cls, t):
         # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
         a = 0.611 # kPa
         b = 17.502
@@ -40,6 +40,15 @@ class Atmosphere:
 
         return a*np.exp((b*t)/(c+t))
 
+    @classmethod
+    def vapor_pressure(cls, t, rh):
+        es = cls.saturation_vapor_pressure(t)
+        return es * rh
+
+    @classmethod
+    def vapor_pressure_deficit(cls, t, rh):
+        es = cls.saturation_vapor_pressure(t)
+        return es * (1 - rh)
 
 class Stomata:
     def __init__(self):
@@ -52,7 +61,8 @@ class Stomata:
         self.g0 = 0.04
         self.g1 = 4.0
 
-    def boundary_layer_conductance(self, width, wind):
+    @classmethod
+    def boundary_layer_conductance(cls, width, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
         sr = 1.0
         ratio = (sr + 1)**2 / (sr**2 + 1)
@@ -89,8 +99,9 @@ class Stomata:
         hs = max(np.roots([aa, bb, cc]))
         hs = np.clip(hs, 0.3, 1.) # preventing bifurcation
 
-        es = Atmosphere.saturation_vapor_pressure(tleaf)
-        ds = (1 - hs) * es # VPD at leaf surface
+        #es = Atmosphere.saturation_vapor_pressure(tleaf)
+        #ds = (1 - hs) * es # VPD at leaf surface
+        ds = Atmosphere.vapor_pressure_deficit(tleaf, hs)
         tmp = g0 + (g1 *temp * (a_net * hs / cs))
         tmp = max(tmp, g0)
 
@@ -105,6 +116,10 @@ class Stomata:
         phyf = -1.2 # reference potential Tuzet et al. 2003 Yang
         self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - pressure)))
         return self.leafp_effect
+
+    @classmethod
+    def total_conductance(cls, gb, gs):
+        return gs * gb / (gs + gb)
 
 
 class GasExchange:
@@ -179,14 +194,15 @@ class GasExchange:
         tleaf_old = 0.
         while abs(tleaf_old - self.tleaf) > 0.01 and i < MAXITER:
             tleaf_old = self.tleaf
-            self._photosynthesis(leafp)
-            self._energybalance(et_supply)
+            self._photosynthesis(leafp, self.tleaf)
+            self.tleaf = self._energybalance(et_supply)
+            self._evapotranspiration(self.tair, self.tleaf)
             i += 1
             #FIXME remove
             self.iter2 = i
 
     # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
-    def _photosynthesis(self, pressure):
+    def _photosynthesis(self, pressure, tleaf):
         f = 0.15 #spectral correction
         o = 210 # gas units are mbar
         theta = 0.5
@@ -211,7 +227,7 @@ class GasExchange:
 
         # variables
         pfd = self.pfd
-        tleaf = self.tleaf
+        #tleaf = self.tleaf
         press = self.press
         co2 = self.co2
 
@@ -333,28 +349,33 @@ class GasExchange:
         press = self.press
 
         gha = gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
-        gv = gs * gb / (gs + gb)
+        gv = self.stomata.total_conductance(gb, gs)
         gr = 4 * EPS * SBC * (273 + ta)**3 / cp *2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = EPS * SBC * (ta + 273)**4 * 2 # emitted thermal radiation
         psc1 = psc * ghr / gv # apparent psychrometer constant
 
-        es_ta = Atmosphere.saturation_vapor_pressure(ta)
-        self.vpd = es_ta * (1 - rh) # vapor pressure deficit
-        ea = es_ta * rh # ambient vapor pressure
-
         # debug dt I commented out the changes that yang made for leaf temperature for a test. I don't think they work
         if jw == 0:
-            self.tleaf = ta + (psc1 / (self._slope(ta) + psc1)) * ((r_abs - thermal_air) / (ghr * cp) - self.vpd / (psc1 * press)) # eqn 14.6b linearized form using first order approximation of Taylor series
+            vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
+            tleaf = ta + (psc1 / (self._slope(ta) + psc1)) * ((r_abs - thermal_air) / (ghr * cp) - vpd / (psc1 * press)) # eqn 14.6b linearized form using first order approximation of Taylor series
         else:
-            self.tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
+            tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
+        return tleaf
 
-        ti = self.tleaf
-        es_leaf = Atmosphere.saturation_vapor_pressure(ti)
+    def _evapotranspiration(self, ta, tleaf):
+        #variables
+        ta = self.tair
+        gb = self.gb
+        gs = self.gs
+        rh = self.rh
+        press = self.press
 
-        temp = self._slope(ta)
-        temp1 = r_abs - thermal_air
+        self.vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
 
+        gv = self.stomata.total_conductance(gb, gs)
+        ea = Atmosphere.vapor_pressure(ta, rh) # ambient vapor pressure
+        es_leaf = Atmosphere.saturation_vapor_pressure(tleaf)
         et = gv * ((es_leaf - ea) / press) / (1 - (es_leaf + ea) / press)
         et = max(0., et) # 04/27/2011 dt took out the 1000 everything is moles now
         self.et = et
