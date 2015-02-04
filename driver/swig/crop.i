@@ -1,4 +1,5 @@
 %module crop
+%include "std_string.i"
 
 %{
 #include "../crop/controller.h"
