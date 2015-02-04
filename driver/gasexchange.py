@@ -218,10 +218,10 @@ class Photosynthesis:
         return i2
 
     # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
-    def _co2_mesophyll(self, a_net, press, co2, stomata):
+    def _co2_mesophyll(self, a_net, press, co2):
         p = press / 100.
         ca = co2 * p # conversion to partial pressure
-        cm = ca - a_net * stomata.total_resistance_co2() * p
+        cm = ca - a_net * self.stomata.total_resistance_co2() * p
         return np.clip(cm, 0., 2*ca)
 
     # Arrhenius equation
@@ -283,7 +283,7 @@ class Photosynthesis:
             #gi = 1.0 # conductance to CO2 from intercelluar to mesophyle, mol m-2 s-1, assumed
 
             self.stomata.update_stomata(lwp, co2, a_net, rh, tleaf)
-            cm = self._co2_mesophyll(a_net, press, co2, self.stomata)
+            cm = self._co2_mesophyll(a_net, press, co2)
 
             def enzyme_limited():
                 # PEP carboxylation rate, that is the rate of C4 acid generation
@@ -352,11 +352,11 @@ class GasExchange:
     def set_val_psil(self, pfd, tair, co2, rh, wind, press, leaf_width, leafp, et_supply):
         self.atmos = Atmosphere(pfd, tair, co2, rh, wind, press)
 
-        self.stomata = Stomata(leaf_width)
-        self.stomata.update_boundary_layer(wind)
-        self.stomata.update_stomata(leafp, co2, 0., rh, tair)
+        stomata = Stomata(leaf_width)
+        stomata.update_boundary_layer(wind)
+        stomata.update_stomata(leafp, co2, 0., rh, tair)
 
-        self.photosynthesis = Photosynthesis(self.stomata, self.leaf_n_content)
+        self.photosynthesis = Photosynthesis(stomata, self.leaf_n_content)
 
         # override GasEx() function so as to pass leaf water potential
         self._gasex_psil(self.atmos, leafp, et_supply)
@@ -365,8 +365,8 @@ class GasExchange:
         def pseb(atmos, leafp, tleaf):
             #FIXME minimize side-effects in _photosynthesis()
             #FIXME stomata object is the one needs to be tracked in the loop, not a_net
-            a_net = self.photosynthesis.photosynthesize(atmos.pfd, atmos.press, atmos.co2, atmos.rh, leafp, tleaf)
-            tleaf = self._energybalance(atmos.tair, atmos.rh, atmos.r_abs, atmos.press, et_supply)
+            self.photosynthesis.photosynthesize(atmos.pfd, atmos.press, atmos.co2, atmos.rh, leafp, tleaf)
+            tleaf = self._energybalance(self.photosynthesis.stomata, atmos.tair, atmos.rh, atmos.r_abs, atmos.press, et_supply)
             return tleaf
 
         def cost(x):
@@ -378,14 +378,14 @@ class GasExchange:
         self.tleaf = res.x[0]
 
         self.a_net = self.photosynthesis.photosynthesize(atmos.pfd, atmos.press, atmos.co2, atmos.rh, leafp, self.tleaf)
-        self.ci = self.photosynthesis._co2_mesophyll(self.a_net, atmos.press, atmos.co2, self.stomata)
+        self.ci = self.photosynthesis._co2_mesophyll(self.a_net, atmos.press, atmos.co2)
 
         rd = self.photosynthesis._dark_respiration(self.tleaf)
         self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
-        self._evapotranspiration(atmos.tair, atmos.rh, atmos.press, self.tleaf)
+        self._evapotranspiration(self.photosynthesis.stomata, atmos.tair, atmos.rh, atmos.press, self.tleaf)
 
-    def _energybalance(self, ta, rh, r_abs, press, jw):
+    def _energybalance(self, stomata, ta, rh, r_abs, press, jw):
         # see Campbell and Norman (1998) pp 224-225
         # because Stefan-Boltzman constant is for unit surface area by denifition,
         # all terms including sbc are multilplied by 2 (i.e., gr, thermal radiation)
@@ -393,8 +393,8 @@ class GasExchange:
         psc = 6.66e-4
         cp = 29.3 # thermodynamic psychrometer constant and specific hear of air (J mol-1 C-1)
 
-        gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
-        gv = self.stomata.total_conductance_h20()
+        gha = stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
+        gv = stomata.total_conductance_h20()
         gr = 4 * EPS * SBC * (273 + ta)**3 / cp *2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = EPS * SBC * (ta + 273)**4 * 2 # emitted thermal radiation
@@ -408,10 +408,10 @@ class GasExchange:
             tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
         return tleaf
 
-    def _evapotranspiration(self, ta, rh, press, tleaf):
+    def _evapotranspiration(self, stomata, ta, rh, press, tleaf):
         self.vpd = VaporPressure.deficit(ta, rh)
 
-        gv = self.stomata.total_conductance_h20()
+        gv = stomata.total_conductance_h20()
         ea = VaporPressure.ambient(ta, rh)
         es_leaf = VaporPressure.saturation(tleaf)
         et = gv * ((es_leaf - ea) / press) / (1 - (es_leaf + ea) / press)
