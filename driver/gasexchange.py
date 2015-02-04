@@ -369,18 +369,17 @@ class GasExchange:
             tleaf_old = self.tleaf
             #FIXME minimize side-effects in _photosynthesis()
             self.a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, self.tleaf)
-
-            #FIXME can this be moved out?
-            cm = self.photosynthesis._co2_mesophyll(self.a_net, self.press, self.co2, self.stomata)
-            self.ci = cm
-
-            rd = self.photosynthesis._dark_respiration(self.tleaf)
-            self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
-
             self.tleaf = self._energybalance(et_supply)
             i += 1
             #FIXME remove
             self.iter2 = i
+
+        cm = self.photosynthesis._co2_mesophyll(self.a_net, self.press, self.co2, self.stomata)
+        self.ci = cm
+
+        rd = self.photosynthesis._dark_respiration(self.tleaf)
+        self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+
         self._evapotranspiration(self.tair, self.tleaf)
 
     def _energybalance(self, jw):
