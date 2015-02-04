@@ -203,7 +203,8 @@ class GasExchange:
         self.stomata.update_stomata(leafp, self.co2, self.a_net, self.rh, self.tleaf)
 
         p = self.press
-        self.a_net = (ca - ci) / (1.57 / gs + 1.37 / gb) * p / 100.
+        #FIXME stomatal conductance ratio used to be 1.57, not 1.6
+        self.a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
         i = 1
         tleaf_old = 0.
