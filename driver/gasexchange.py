@@ -20,10 +20,91 @@ MAXITER = 200
 EPS = 0.97
 SBC = 5.6697e-8
 
+class Atmosphere:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def saturation_vapor_pressure(t):
+        # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
+        a = 0.611 # kPa
+        b = 17.502
+        c = 240.97 # C
+        return a*np.exp((b*t)/(c+t))
+
+
+class Stomata:
+    def __init__(self):
+        self.setup()
+
+    def setup(self):
+        # in P. J. Sellers, et al.Science 275, 502 (1997)
+        # g0 is b, of which the value for c4 plant is 0.04
+        # and g1 is m, of which the value for c4 plant is about 4 YY
+        self.g0 = 0.04
+        self.g1 = 4.0
+
+    def boundary_layer_conductance(self, width, wind):
+        # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
+        sr = 1.0
+        ratio = (sr + 1)**2 / (sr**2 + 1)
+
+        # characteristic dimension of a leaf, leaf width in m
+        d = width * 0.72
+
+        #return 1.42 # total BLC (both sides) for LI6400 leaf chamber
+        return 1.4 * 0.147 * (max(0.1, wind) / d)**0.5 * ratio
+        # return (1.4 * 1.1 * 6.62 * (wind / d)**0.5 * (press / (R * (273.15 + tair)))) # this is an alternative form including a multiplier for conversion from mm s-1 to mol m-2 s-1
+        # 1.1 is the factor to convert from heat conductance to water vapor conductance, an avarage between still air and laminar flow (see Table 3.2, HG Jones 2014)
+        # 6.62 is for laminar forced convection of air over flat plates on projected area basis
+        # when all conversion is done for each surface it becomes close to 0.147 as given in Norman and Campbell
+        # multiply by 1.4 for outdoor condition, Campbell and Norman (1998), p109, also see Jones 2014, pg 59 which suggest using 1.5 as this factor.
+        # multiply by ratio to get the effective blc (per projected area basis), licor 6400 manual p 1-9
+
+    # stomatal conductance for water vapor in mol m-2 s-1
+    def stomatal_conductance(self, pressure, co2, a_net, gb, rh, tleaf):
+        # params
+        g0 = self.g0
+        g1 = self.g1
+
+        gamma = 10.0
+        cs = co2 - (1.37 * a_net / gb) # surface CO2 in mole fraction
+        if cs <= gamma:
+            cs = gamma + 1
+
+        temp = self._set_leafp_effect(pressure)
+
+        aa = temp * g1 * a_net / cs
+        bb = g0 + gb - (temp * g1 * a_net / cs)
+        cc = (-rh * gb) - g0
+        #hs = QuadSolnUpper(aa, bb, cc)
+        hs = max(np.roots([aa, bb, cc]))
+        hs = np.clip(hs, 0.3, 1.) # preventing bifurcation
+
+        es = Atmosphere.saturation_vapor_pressure(tleaf)
+        ds = (1 - hs) * es # VPD at leaf surface
+        tmp = g0 + (g1 *temp * (a_net * hs / cs))
+        tmp = max(tmp, g0)
+
+        # this below is an example of how you can write temporary data to a debug window. It can be copied and
+        # pasted into excel for plotting. Dennis See above where the CString object is created.
+        print("tmp = %f pressure = %f Ds= %f Tleaf = %f Cs = %f Anet = %f hs = %f RH = %f" % (tmp, pressure, ds, tleaf, cs, a_net, hs, rh))
+        return tmp
+
+    def _set_leafp_effect(self, pressure):
+        # pressure - leaf water potential MPa...
+        sf = 2.3 # sensitivity parameter Tuzet et al. 2003 Yang
+        phyf = -1.2 # reference potential Tuzet et al. 2003 Yang
+        self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - pressure)))
+        return self.leafp_effect
+
+
 class GasExchange:
     def __init__(self, s_type, n_content):
         self.s_type = s_type
         self.leaf_n_content = n_content
+
+        self.stomata = Stomata()
 
     def set_val_psil(self, pfd, tair, co2, rh, wind, press, width, leafp, et_supply):
         scatt = 0.15
@@ -66,12 +147,6 @@ class GasExchange:
         self.rd25 = 2.0
         self.ear = 39800
 
-        # in P. J. Sellers, et al.Science 275, 502 (1997)
-        # g0 is b, of which the value for c4 plant is 0.04
-        # and g1 is m, of which the value for c4 plant is about 4 YY
-        self.g0 = 0.04
-        self.g1 = 4.0
-
         self.beta_aba = 1.48e2 # Tardieu-Davies beta, Dewar (2002) Need the references !?
         self.delta = -1.0
         self.alpha_aba = 1.0e-4
@@ -82,12 +157,12 @@ class GasExchange:
     def _gasex_psil(self, leafp, et_supply):
         ca = self.co2
         ci = self.ci = 0.4 * ca
-        gb = self.gb = self._gbw()
+        gb = self.gb = self.stomata.boundary_layer_conductance(self.width, self.wind)
 
         #FIXME need initalization?
         self.a_net = 0.
         self.tleaf = self.tair
-        gs = self.gs = self._gsw(leafp)
+        gs = self.gs = self.stomata.stomatal_conductance(leafp, self.co2, self.a_net, gb, self.rh, self.tleaf)
 
         p = self.press
         self.a_net = (ca - ci) / (1.57 / gs + 1.37 / gb) * p / 100.
@@ -101,70 +176,6 @@ class GasExchange:
             i += 1
             #FIXME remove
             self.iter2 = i
-
-    def _gbw(self):
-        # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
-        sr = 1.0
-        ratio = (sr + 1)**2 / (sr**2 + 1)
-
-        # characteristic dimension of a leaf, leaf width in m
-        d = self.width * 0.72
-
-        # variables
-        wind = self.wind
-        #press = self.press
-        #tair = self.tair
-
-        #return 1.42 # total BLC (both sides) for LI6400 leaf chamber
-        return 1.4 * 0.147 * (max(0.1, wind) / d)**0.5 * ratio
-        # return (1.4 * 1.1 * 6.62 * (wind / d)**0.5 * (press / (R * (273.15 + tair)))) # this is an alternative form including a multiplier for conversion from mm s-1 to mol m-2 s-1
-        # 1.1 is the factor to convert from heat conductance to water vapor conductance, an avarage between still air and laminar flow (see Table 3.2, HG Jones 2014)
-        # 6.62 is for laminar forced convection of air over flat plates on projected area basis
-        # when all conversion is done for each surface it becomes close to 0.147 as given in Norman and Campbell
-        # multiply by 1.4 for outdoor condition, Campbell and Norman (1998), p109, also see Jones 2014, pg 59 which suggest using 1.5 as this factor.
-        # multiply by ratio to get the effective blc (per projected area basis), licor 6400 manual p 1-9
-
-    # stomatal conductance for water vapor in mol m-2 s-1
-    def _gsw(self, pressure):
-        # params
-        g0 = self.g0
-        g1 = self.g1
-
-        # variables
-        gb = self.gb
-        a_net = self.a_net
-        rh = self.rh
-        tleaf = self.tleaf
-
-        gamma = 10.0
-        cs = self.co2 - (1.37 * self.a_net / gb) # surface CO2 in mole fraction
-        if cs <= gamma:
-            cs = gamma + 1
-
-        temp = self._set_leafp_effect(pressure)
-
-        aa = temp * g1 * a_net / cs
-        bb = g0 + gb - (temp * g1 * a_net / cs)
-        cc = (-rh * gb) - g0
-        #hs = QuadSolnUpper(aa, bb, cc)
-        hs = max(np.roots([aa, bb, cc]))
-        hs = np.clip(hs, 0.3, 1.) # preventing bifurcation
-
-        ds = (1 - hs) * self._es(tleaf) # VPD at leaf surface
-        tmp = g0 + (g1 *temp * (a_net * hs / cs))
-        tmp = max(tmp, g0)
-
-        # this below is an example of how you can write temporary data to a debug window. It can be copied and
-        # pasted into excel for plotting. Dennis See above where the CString object is created.
-        print("Source = %s tmp = %f pressure = %f Ds= %f Tleaf = %f Cs = %f Anet = %f hs = %f RH = %f" % (self.s_type, tmp, pressure, ds, tleaf, cs, a_net, hs, rh))
-        return tmp
-
-    def _set_leafp_effect(self, pressure):
-        # pressure - leaf water potential MPa...
-        sf = 2.3 # sensitivity parameter Tuzet et al. 2003 Yang
-        phyf = -1.2 # reference potential Tuzet et al. 2003 Yang
-        self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - pressure)))
-        return self.leafp_effect
 
     # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
     def _photosynthesis(self, pressure):
@@ -255,9 +266,9 @@ class GasExchange:
 
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         while abs(cm - cm_last) > 0.01 and i < MAXITER:
-            gs = self.gs = self._gsw(pressure)
             #FIXME no need to call _gbw() here?
             gb = self.gb
+            gs = self.gs = self.stomata.stomatal_conductance(pressure, self.co2, self.a_net, gb, self.rh, self.tleaf)
 
             cm_last = cm
             cm = ca - self.a_net * (1.6 / gs + 1.37 / gb) * p
@@ -320,8 +331,9 @@ class GasExchange:
         thermal_air = EPS * SBC * (ta + 273)**4 * 2 # emitted thermal radiation
         psc1 = psc * ghr / gv # apparent psychrometer constant
 
-        self.vpd = self._es(ta) * (1 - rh) # vapor pressure deficit
-        ea = self._es(ta) * rh # ambient vapor pressure
+        es_ta = Atmosphere.saturation_vapor_pressure(ta)
+        self.vpd = es_ta * (1 - rh) # vapor pressure deficit
+        ea = es_ta * rh # ambient vapor pressure
 
         # debug dt I commented out the changes that yang made for leaf temperature for a test. I don't think they work
         if jw == 0:
@@ -330,7 +342,7 @@ class GasExchange:
             self.tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
 
         ti = self.tleaf
-        es_leaf = self._es(ti)
+        es_leaf = Atmosphere.saturation_vapor_pressure(ti)
 
         temp = self._slope(ta)
         temp1 = r_abs - thermal_air
@@ -348,9 +360,6 @@ class GasExchange:
         b = 17.502
         c = 240.97
 
-        slope = self._es(t) * (b*c) / (c + t)**2 / press
+        es = Atmosphere.saturation_vapor_pressure(t)
+        slope = es * (b*c) / (c + t)**2 / press
         return slope
-
-    # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
-    def _es(self, t):
-        return 0.611 * np.exp(17.502 * t / (240.97 + t))
