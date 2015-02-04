@@ -15,7 +15,6 @@
 import numpy as np
 import scipy.optimize
 
-MAXITER = 200
 #FIXME are they parameters?
 EPS = 0.97
 SBC = 5.6697e-8
@@ -357,22 +356,20 @@ class GasExchange:
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
         a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
-        def eb(tleaf):
-            pass
+        def pseb(pfd, press, co2, rh, leafp, tleaf):
+            #FIXME minimize side-effects in _photosynthesis()
+            #FIXME stomata object is the one needs to be tracked in the loop, not a_net
+            a_net = self.photosynthesis.photosynthesize(pfd, press, co2, rh, leafp, tleaf)
+            tleaf = self._energybalance(et_supply)
+            return tleaf
 
         def cost(x):
-            pass
+            tleaf0 = x[0]
+            tleaf1 = pseb(self.pfd, self.press, self.co2, self.rh, leafp, tleaf0)
+            return (tleaf0 - tleaf1)**2
 
-        i = 1
-        tleaf_old = 0.
-        while abs(tleaf_old - tleaf) > 0.01 and i < MAXITER:
-            tleaf_old = tleaf
-            #FIXME minimize side-effects in _photosynthesis()
-            a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, tleaf)
-            tleaf = self._energybalance(et_supply)
-            i += 1
-            #FIXME remove
-            self.iter2 = i
+        res = scipy.optimize.minimize(cost, [tleaf], options={'disp': True})
+        tleaf = res.x[0]
 
         self.tleaf = tleaf
 
