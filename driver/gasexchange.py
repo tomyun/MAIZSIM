@@ -371,16 +371,16 @@ class GasExchange:
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
         a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
-        def pseb(pfd, press, co2, rh, leafp, tleaf):
+        def pseb(atmos, leafp, tleaf):
             #FIXME minimize side-effects in _photosynthesis()
             #FIXME stomata object is the one needs to be tracked in the loop, not a_net
-            a_net = self.photosynthesis.photosynthesize(pfd, press, co2, rh, leafp, tleaf)
-            tleaf = self._energybalance(et_supply)
+            a_net = self.photosynthesis.photosynthesize(atmos.pfd, atmos.press, atmos.co2, atmos.rh, leafp, tleaf)
+            tleaf = self._energybalance(atmos.tair, atmos.rh, atmos.r_abs, atmos.press, et_supply)
             return tleaf
 
         def cost(x):
             tleaf0 = x[0]
-            tleaf1 = pseb(self.atmos.pfd, self.atmos.press, self.atmos.co2, self.atmos.rh, leafp, tleaf0)
+            tleaf1 = pseb(self.atmos, leafp, tleaf0)
             return (tleaf0 - tleaf1)**2
 
         res = scipy.optimize.minimize(cost, [tleaf], options={'disp': True})
@@ -396,23 +396,15 @@ class GasExchange:
         self.a_gross = max(0, a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
         self.a_net = a_net
 
-        self._evapotranspiration(self.atmos.tair, tleaf)
+        self._evapotranspiration(self.atmos.tair, self.atmos.rh, self.atmos.press, tleaf)
 
-    def _energybalance(self, jw):
+    def _energybalance(self, ta, rh, r_abs, press, jw):
         # see Campbell and Norman (1998) pp 224-225
         # because Stefan-Boltzman constant is for unit surface area by denifition,
         # all terms including sbc are multilplied by 2 (i.e., gr, thermal radiation)
         lamda = 44000 # KJ mole-1 at 25oC
         psc = 6.66e-4
         cp = 29.3 # thermodynamic psychrometer constant and specific hear of air (J mol-1 C-1)
-
-        #double gha, gv, gr, ghr, psc1, Ea, thermal_air, Ti, Ta;
-
-        # variables
-        ta = self.atmos.tair
-        rh = self.atmos.rh
-        r_abs = self.atmos.r_abs
-        press = self.atmos.press
 
         gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
         gv = self.stomata.total_conductance_h20()
@@ -429,12 +421,7 @@ class GasExchange:
             tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
         return tleaf
 
-    def _evapotranspiration(self, ta, tleaf):
-        #variables
-        ta = self.atmos.tair
-        rh = self.atmos.rh
-        press = self.atmos.press
-
+    def _evapotranspiration(self, ta, rh, press, tleaf):
         self.vpd = VaporPressure.deficit(ta, rh)
 
         gv = self.stomata.total_conductance_h20()
