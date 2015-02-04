@@ -20,8 +20,25 @@ EPS = 0.97
 SBC = 5.6697e-8
 
 class Atmosphere:
-    def __init__(self):
-        pass
+    def __init__(self, pfd, tair, co2, rh, wind, press):
+        self.setup(pfd, tair, co2, rh, wind, press)
+
+    def setup(self, pfd, tair, co2, rh, wind, press):
+        self.pfd = pfd
+        par = pfd / 4.55
+        # If total solar radiation unavailable, assume NIR the same energy as PAR waveband
+        nir = par
+
+        scatt = 0.15
+        # times 2 for projected area basis
+        self.r_abs = (1 - scatt)*par + 0.15*nir + 2*(EPS * SBC * (tair+273)**4)
+
+        # shortwave radiation (PAR (=0.85) + NIR (=0.15) solar radiation absorptivity of leaves: =~ 0.5
+        self.co2 = co2
+        self.rh = np.clip(rh, 10, 100) / 100.
+        self.tair = tair # C
+        self.wind = wind # meters s-1
+        self.press = press # kPa
 
     @classmethod
     def saturation_vapor_pressure(cls, t):
@@ -50,10 +67,10 @@ class Atmosphere:
 
 
 class Stomata:
-    def __init__(self):
-        self.setup()
+    def __init__(self, leaf_width):
+        self.setup(leaf_width)
 
-    def setup(self):
+    def setup(self, leaf_width):
         # in P. J. Sellers, et al.Science 275, 502 (1997)
         # g0 is b, of which the value for c4 plant is 0.04
         # and g1 is m, of which the value for c4 plant is about 4 YY
@@ -63,15 +80,16 @@ class Stomata:
         self.gb = 0. # boundary layer conductance
         self.gs = 0. # stomatal conductance
 
+        self.leaf_width = leaf_width / 100. # meters
         self.leafp_effect = 1 # At first assume there is not drought stress, so assign 1 to leafpEffect. Yang 8/20/06
 
-    def update_boundary_layer(self, width, wind):
+    def update_boundary_layer(self, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
         sr = 1.0
         ratio = (sr + 1)**2 / (sr**2 + 1)
 
         # characteristic dimension of a leaf, leaf width in m
-        d = width * 0.72
+        d = self.leaf_width * 0.72
 
         #return 1.42 # total BLC (both sides) for LI6400 leaf chamber
         self.gb = 1.4 * 0.147 * (max(0.1, wind) / d)**0.5 * ratio
@@ -316,44 +334,29 @@ class Photosynthesis:
 
 
 class GasExchange:
-    def __init__(self, s_type, n_content):
+    def __init__(self, s_type, leaf_n_content):
         self.s_type = s_type
-        self.leaf_n_content = n_content
+        self.leaf_n_content = leaf_n_content
 
-        self.stomata = Stomata()
+    def set_val_psil(self, pfd, tair, co2, rh, wind, press, leaf_width, leafp, et_supply):
+        self.atmos = Atmosphere(pfd, tair, co2, rh, wind, press)
+        self.stomata = Stomata(leaf_width)
         self.photosynthesis = Photosynthesis(self.stomata, self.leaf_n_content)
-
-    def set_val_psil(self, pfd, tair, co2, rh, wind, press, width, leafp, et_supply):
-        scatt = 0.15
-        self.pfd = pfd
-        par = pfd / 4.55
-        # If total solar radiation unavailable, assume NIR the same energy as PAR waveband
-        nir = par
-        # times 2 for projected area basis
-        self.r_abs = (1 - scatt)*par + 0.15*nir + 2*(EPS * SBC * (tair+273)**4)
-        # shortwave radiation (PAR (=0.85) + NIR (=0.15) solar radiation absorptivity of leaves: =~ 0.5
-        self.co2 = co2
-        self.rh = np.clip(rh, 10, 100) / 100.
-        self.tair = tair # C
-        self.width = width / 100. # meters
-        self.wind = wind # meters s-1
-        self.press = press # kPa
-        self.leafp = leafp
 
         # override GasEx() function so as to pass leaf water potential
         self._gasex_psil(leafp, et_supply)
 
     def _gasex_psil(self, leafp, et_supply):
-        ca = self.co2
+        ca = self.atmos.co2
         ci = self.ci = 0.4 * ca
-        self.stomata.update_boundary_layer(self.width, self.wind)
+        self.stomata.update_boundary_layer(self.atmos.wind)
 
         #FIXME need initalization?
         a_net = 0.
-        tleaf = self.tair
-        self.stomata.update_stomata(leafp, self.co2, a_net, self.rh, tleaf)
+        tleaf = self.atmos.tair
+        self.stomata.update_stomata(leafp, self.atmos.co2, a_net, self.atmos.rh, tleaf)
 
-        p = self.press
+        p = self.atmos.press
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
         a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
 
@@ -366,7 +369,7 @@ class GasExchange:
 
         def cost(x):
             tleaf0 = x[0]
-            tleaf1 = pseb(self.pfd, self.press, self.co2, self.rh, leafp, tleaf0)
+            tleaf1 = pseb(self.atmos.pfd, self.atmos.press, self.atmos.co2, self.atmos.rh, leafp, tleaf0)
             return (tleaf0 - tleaf1)**2
 
         res = scipy.optimize.minimize(cost, [tleaf], options={'disp': True})
@@ -374,14 +377,14 @@ class GasExchange:
 
         self.tleaf = tleaf
 
-        cm = self.photosynthesis._co2_mesophyll(a_net, self.press, self.co2, self.stomata)
+        cm = self.photosynthesis._co2_mesophyll(a_net, self.atmos.press, self.atmos.co2, self.stomata)
         self.ci = cm
 
         rd = self.photosynthesis._dark_respiration(tleaf)
         self.a_gross = max(0, a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
         self.a_net = a_net
 
-        self._evapotranspiration(self.tair, tleaf)
+        self._evapotranspiration(self.atmos.tair, tleaf)
 
     def _energybalance(self, jw):
         # see Campbell and Norman (1998) pp 224-225
@@ -394,10 +397,10 @@ class GasExchange:
         #double gha, gv, gr, ghr, psc1, Ea, thermal_air, Ti, Ta;
 
         # variables
-        ta = self.tair
-        rh = self.rh
-        r_abs = self.r_abs
-        press = self.press
+        ta = self.atmos.tair
+        rh = self.atmos.rh
+        r_abs = self.atmos.r_abs
+        press = self.atmos.press
 
         gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
         gv = self.stomata.total_conductance_h20()
@@ -416,9 +419,9 @@ class GasExchange:
 
     def _evapotranspiration(self, ta, tleaf):
         #variables
-        ta = self.tair
-        rh = self.rh
-        press = self.press
+        ta = self.atmos.tair
+        rh = self.atmos.rh
+        press = self.atmos.press
 
         self.vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
 
@@ -432,7 +435,7 @@ class GasExchange:
     # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
     def _slope(self, t):
         # variables
-        press = self.press
+        press = self.atmos.press
 
         # units of b and c are  degrees C
         b = 17.502
