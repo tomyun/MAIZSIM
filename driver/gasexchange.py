@@ -350,8 +350,8 @@ class GasExchange:
 
         #FIXME need initalization?
         self.a_net = 0.
-        self.tleaf = self.tair
-        self.stomata.update_stomata(leafp, self.co2, self.a_net, self.rh, self.tleaf)
+        tleaf = self.tair
+        self.stomata.update_stomata(leafp, self.co2, self.a_net, self.rh, tleaf)
 
         p = self.press
         #FIXME stomatal conductance ratio used to be 1.57, not 1.6
@@ -365,22 +365,24 @@ class GasExchange:
 
         i = 1
         tleaf_old = 0.
-        while abs(tleaf_old - self.tleaf) > 0.01 and i < MAXITER:
-            tleaf_old = self.tleaf
+        while abs(tleaf_old - tleaf) > 0.01 and i < MAXITER:
+            tleaf_old = tleaf
             #FIXME minimize side-effects in _photosynthesis()
-            self.a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, self.tleaf)
-            self.tleaf = self._energybalance(et_supply)
+            self.a_net = self.photosynthesis.photosynthesize(self.pfd, self.press, self.co2, self.rh, leafp, tleaf)
+            tleaf = self._energybalance(et_supply)
             i += 1
             #FIXME remove
             self.iter2 = i
 
+        self.tleaf = tleaf
+
         cm = self.photosynthesis._co2_mesophyll(self.a_net, self.press, self.co2, self.stomata)
         self.ci = cm
 
-        rd = self.photosynthesis._dark_respiration(self.tleaf)
+        rd = self.photosynthesis._dark_respiration(tleaf)
         self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
-        self._evapotranspiration(self.tair, self.tleaf)
+        self._evapotranspiration(self.tair, tleaf)
 
     def _energybalance(self, jw):
         # see Campbell and Norman (1998) pp 224-225
@@ -394,7 +396,6 @@ class GasExchange:
 
         # variables
         ta = self.tair
-        #ti = self.tleaf
         rh = self.rh
         r_abs = self.r_abs
         press = self.press
