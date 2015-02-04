@@ -255,33 +255,33 @@ class GasExchange:
 
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         while abs(cm - cm_last) > 0.01 and i < MAXITER:
-          gs = self.gs = self._gsw(pressure)
-          #FIXME no need to call _gbw() here?
-          gb = self.gb
+            gs = self.gs = self._gsw(pressure)
+            #FIXME no need to call _gbw() here?
+            gb = self.gb
 
-          cm_last = cm
-          cm = ca - self.a_net * (1.6 / gs + 1.37 / gb) * p
-          cm = np.clip(cm, 0., 2*ca)
+            cm_last = cm
+            cm = ca - self.a_net * (1.6 / gs + 1.37 / gb) * p
+            cm = np.clip(cm, 0., 2*ca)
 
-          vp1 = (cm * vpmax) / (cm + kp) # PEP carboxylation rate, that is the rate of C4 acid generation
-          vp2 = vpr
-          vp = max(min(vp1, vp2), 0)
+            vp1 = (cm * vpmax) / (cm + kp) # PEP carboxylation rate, that is the rate of C4 acid generation
+            vp2 = vpr
+            vp = max(min(vp1, vp2), 0)
 
-          # Enzyme limited A (Rubisco or PEP carboxylation
-          ac1 = vp + gbs*cm - rm
-          #ac1 = max(0, ac1) # prevent Ac1 from being negative Yang 9/26/06
-          ac2 = vcmax - rd
-          ac = min(ac1, ac2)
+            # Enzyme limited A (Rubisco or PEP carboxylation
+            ac1 = vp + gbs*cm - rm
+            #ac1 = max(0, ac1) # prevent Ac1 from being negative Yang 9/26/06
+            ac2 = vcmax - rd
+            ac = min(ac1, ac2)
 
-          # Light and electron transport limited A mediated by J
-          #j = QuadSolnLower(theta, -(i2+jmax), i2*jmax) # rate of electron transport
-          j = min(np.roots([theta, -(i2+jmax), i2*jmax])) # rate of electron transport
-          aj1 = x*j/2. - rm + gbs*cm
-          aj2 = (1 - x)*j/3. - rd
-          aj = min(aj1, aj2)
-          a_net = ((ac+aj) - ((ac+aj)**2 - 4*beta*ac*aj)**0.5) / (2*beta) # smooting the transition between Ac and Aj
-          self.a_net = a_net
-          i += 1
+            # Light and electron transport limited A mediated by J
+            #j = QuadSolnLower(theta, -(i2+jmax), i2*jmax) # rate of electron transport
+            j = min(np.roots([theta, -(i2+jmax), i2*jmax])) # rate of electron transport
+            aj1 = x*j/2. - rm + gbs*cm
+            aj2 = (1 - x)*j/3. - rd
+            aj = min(aj1, aj2)
+            a_net = ((ac+aj) - ((ac+aj)**2 - 4*beta*ac*aj)**0.5) / (2*beta) # smooting the transition between Ac and Aj
+            self.a_net = a_net
+            i += 1
 
         #convergence = true
         #FIXME remove
