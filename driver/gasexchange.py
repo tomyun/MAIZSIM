@@ -13,6 +13,7 @@
 # modified 2009 to adjust photosynthesis for nitroge stress Y. Yang
 
 import numpy as np
+import scipy.optimize
 
 R = 8.314
 MAXITER = 200
@@ -265,23 +266,17 @@ class GasExchange:
                 / (1 + np.exp((sj * tk - hj) / (R * tk)))
         rm = 0.5 * rd
 
-        cm = self.ci # mesophyle CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
-        cm_next = cm
+        # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
+        def co2_mesophyll(ca, a_net, gs, gb):
+            cm = ca - a_net * (1.6 / gs + 1.37 / gb) * p
+            return np.clip(cm, 0., 2*ca)
 
-        i = 1
-        cm_last = 0
+        def c4(a_net, gb, co2, rh, tleaf):
+            gs = self.stomata.stomatal_conductance(pressure, co2, a_net, gb, rh, tleaf)
+            cm = co2_mesophyll(ca, a_net, gs, gb)
 
-        # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
-        while abs(cm - cm_last) > 0.01 and i < MAXITER:
-            #FIXME no need to call _gbw() here?
-            gb = self.gb
-            gs = self.gs = self.stomata.stomatal_conductance(pressure, self.co2, self.a_net, gb, self.rh, self.tleaf)
-
-            cm_last = cm
-            cm = ca - self.a_net * (1.6 / gs + 1.37 / gb) * p
-            cm = np.clip(cm, 0., 2*ca)
-
-            vp1 = (cm * vpmax) / (cm + kp) # PEP carboxylation rate, that is the rate of C4 acid generation
+            # PEP carboxylation rate, that is the rate of C4 acid generation
+            vp1 = (cm * vpmax) / (cm + kp)
             vp2 = vpr
             vp = max(min(vp1, vp2), 0)
 
@@ -297,20 +292,26 @@ class GasExchange:
             aj1 = x*j/2. - rm + gbs*cm
             aj2 = (1 - x)*j/3. - rd
             aj = min(aj1, aj2)
-            a_net = ((ac+aj) - ((ac+aj)**2 - 4*beta*ac*aj)**0.5) / (2*beta) # smooting the transition between Ac and Aj
-            self.a_net = a_net
-            i += 1
 
-        #convergence = true
-        #FIXME remove
-        self.iter1 = i
+            return ((ac+aj) - ((ac+aj)**2 - 4*beta*ac*aj)**0.5) / (2*beta) # smooting the transition between Ac and Aj
 
-        os = alpha * a_net / (0.047*gbs) + om # Bundle sheath O2 partial pressure, mbar
+        def cost(x):
+            a_net0 = x[0]
+            a_net1 = c4(a_net0, self.gb, self.co2, self.rh, self.tleaf)
+            return (a_net0 - a_net1)**2
+
+        # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
+        res = scipy.optimize.minimize(cost, [self.a_net], options={'disp': True})
+        self.a_net = res.x[0]
+        self.gs = self.stomata.stomatal_conductance(pressure, self.co2, self.a_net, self.gb, self.rh, self.tleaf)
+        cm = co2_mesophyll(ca, self.a_net, self.gs, self.gb)
+
+        os = alpha * self.a_net / (0.047*gbs) + om # Bundle sheath O2 partial pressure, mbar
         #cbs = cm + (vp - a_net -rm) / gbs # Bundle sheath CO2 partial pressure, ubar
         gamma_star = gamma1 * os
         gamma = (rd*km + vcmax*gamma_star) / (vcmax - rd)
         self.ci = cm
-        self.a_gross = max(0, a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+        self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
     def _energybalance(self, jw):
         # see Campbell and Norman (1998) pp 224-225
