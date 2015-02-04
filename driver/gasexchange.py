@@ -358,18 +358,17 @@ class GasExchange:
         self._gasex_psil(leafp, et_supply)
 
     def _gasex_psil(self, leafp, et_supply):
-        ca = self.atmos.co2
-        ci = self.ci = 0.4 * ca
         self.stomata.update_boundary_layer(self.atmos.wind)
+        self.stomata.update_stomata(leafp, self.atmos.co2, 0., self.atmos.rh, self.atmos.tair)
 
-        #FIXME need initalization?
-        a_net = 0.
-        tleaf = self.atmos.tair
-        self.stomata.update_stomata(leafp, self.atmos.co2, a_net, self.atmos.rh, tleaf)
-
-        p = self.atmos.press
-        #FIXME stomatal conductance ratio used to be 1.57, not 1.6
-        a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
+        #FIXME no need for initial a_net, right?
+        def initial_a_net():
+            ca = self.atmos.co2
+            ci = 0.4 * ca
+            p = self.atmos.press
+            #FIXME stomatal conductance ratio used to be 1.57, not 1.6
+            a_net = (ca - ci) / self.stomata.total_resistance_co2() * p / 100.
+            return a_net
 
         def pseb(atmos, leafp, tleaf):
             #FIXME minimize side-effects in _photosynthesis()
@@ -383,20 +382,16 @@ class GasExchange:
             tleaf1 = pseb(self.atmos, leafp, tleaf0)
             return (tleaf0 - tleaf1)**2
 
-        res = scipy.optimize.minimize(cost, [tleaf], options={'disp': True})
-        tleaf = res.x[0]
+        res = scipy.optimize.minimize(cost, [self.atmos.tair], options={'disp': True})
+        self.tleaf = res.x[0]
 
-        a_net = self.photosynthesis.photosynthesize(self.atmos.pfd, self.atmos.press, self.atmos.co2, self.atmos.rh, leafp, tleaf)
-        self.tleaf = tleaf
+        self.a_net = self.photosynthesis.photosynthesize(self.atmos.pfd, self.atmos.press, self.atmos.co2, self.atmos.rh, leafp, self.tleaf)
+        self.ci = self.photosynthesis._co2_mesophyll(self.a_net, self.atmos.press, self.atmos.co2, self.stomata)
 
-        cm = self.photosynthesis._co2_mesophyll(a_net, self.atmos.press, self.atmos.co2, self.stomata)
-        self.ci = cm
+        rd = self.photosynthesis._dark_respiration(self.tleaf)
+        self.a_gross = max(0, self.a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
-        rd = self.photosynthesis._dark_respiration(tleaf)
-        self.a_gross = max(0, a_net + rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
-        self.a_net = a_net
-
-        self._evapotranspiration(self.atmos.tair, self.atmos.rh, self.atmos.press, tleaf)
+        self._evapotranspiration(self.atmos.tair, self.atmos.rh, self.atmos.press, self.tleaf)
 
     def _energybalance(self, ta, rh, r_abs, press, jw):
         # see Campbell and Norman (1998) pp 224-225
