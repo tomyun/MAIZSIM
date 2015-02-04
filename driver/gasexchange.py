@@ -61,8 +61,10 @@ class Stomata:
         self.g0 = 0.04
         self.g1 = 4.0
 
-    @classmethod
-    def boundary_layer_conductance(cls, width, wind):
+        self.gb = 0. # boundary layer conductance
+        self.gs = 0. # stomatal conductance
+
+    def update_boundary_layer(self, width, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
         sr = 1.0
         ratio = (sr + 1)**2 / (sr**2 + 1)
@@ -71,19 +73,21 @@ class Stomata:
         d = width * 0.72
 
         #return 1.42 # total BLC (both sides) for LI6400 leaf chamber
-        return 1.4 * 0.147 * (max(0.1, wind) / d)**0.5 * ratio
-        # return (1.4 * 1.1 * 6.62 * (wind / d)**0.5 * (press / (R * (273.15 + tair)))) # this is an alternative form including a multiplier for conversion from mm s-1 to mol m-2 s-1
+        self.gb = 1.4 * 0.147 * (max(0.1, wind) / d)**0.5 * ratio
+        #self.gb = (1.4 * 1.1 * 6.62 * (wind / d)**0.5 * (press / (R * (273.15 + tair)))) # this is an alternative form including a multiplier for conversion from mm s-1 to mol m-2 s-1
         # 1.1 is the factor to convert from heat conductance to water vapor conductance, an avarage between still air and laminar flow (see Table 3.2, HG Jones 2014)
         # 6.62 is for laminar forced convection of air over flat plates on projected area basis
         # when all conversion is done for each surface it becomes close to 0.147 as given in Norman and Campbell
         # multiply by 1.4 for outdoor condition, Campbell and Norman (1998), p109, also see Jones 2014, pg 59 which suggest using 1.5 as this factor.
         # multiply by ratio to get the effective blc (per projected area basis), licor 6400 manual p 1-9
+        return self.gb
 
     # stomatal conductance for water vapor in mol m-2 s-1
-    def stomatal_conductance(self, pressure, co2, a_net, gb, rh, tleaf):
+    def update_stomata(self, pressure, co2, a_net, rh, tleaf):
         # params
         g0 = self.g0
         g1 = self.g1
+        gb = self.gb
 
         gamma = 10.0
         cs = co2 - (1.37 * a_net / gb) # surface CO2 in mole fraction
@@ -108,7 +112,8 @@ class Stomata:
         # this below is an example of how you can write temporary data to a debug window. It can be copied and
         # pasted into excel for plotting. Dennis See above where the CString object is created.
         print("tmp = %f pressure = %f Ds= %f Tleaf = %f Cs = %f Anet = %f hs = %f RH = %f" % (tmp, pressure, ds, tleaf, cs, a_net, hs, rh))
-        return tmp
+        self.gs = tmp
+        return self.gs
 
     def _set_leafp_effect(self, pressure):
         # pressure - leaf water potential MPa...
@@ -117,9 +122,19 @@ class Stomata:
         self.leafp_effect = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - pressure)))
         return self.leafp_effect
 
-    @classmethod
-    def total_conductance(cls, gb, gs):
+    def total_conductance_h20(self):
+        gs = self.gs
+        gb = self.gb
         return gs * gb / (gs + gb)
+
+    def boundary_layer_resistance_co2(self):
+        return 1.37 / self.gb
+
+    def stomatal_resistance_co2(self):
+        return 1.6 / self.gs
+
+    def total_resistance_co2(self):
+        return self.boundary_layer_resistance_co2() + self.stomatal_resistance_co2()
 
 
 class GasExchange:
@@ -180,12 +195,12 @@ class GasExchange:
     def _gasex_psil(self, leafp, et_supply):
         ca = self.co2
         ci = self.ci = 0.4 * ca
-        gb = self.gb = self.stomata.boundary_layer_conductance(self.width, self.wind)
+        self.stomata.update_boundary_layer(self.width, self.wind)
 
         #FIXME need initalization?
         self.a_net = 0.
         self.tleaf = self.tair
-        gs = self.gs = self.stomata.stomatal_conductance(leafp, self.co2, self.a_net, gb, self.rh, self.tleaf)
+        self.stomata.update_stomata(leafp, self.co2, self.a_net, self.rh, self.tleaf)
 
         p = self.press
         self.a_net = (ca - ci) / (1.57 / gs + 1.37 / gb) * p / 100.
@@ -283,13 +298,13 @@ class GasExchange:
         rm = 0.5 * rd
 
         # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
-        def co2_mesophyll(ca, a_net, gs, gb):
-            cm = ca - a_net * (1.6 / gs + 1.37 / gb) * p
+        def co2_mesophyll(ca, a_net, stomata):
+            cm = ca - a_net * stomata.total_resistance_co2() * p
             return np.clip(cm, 0., 2*ca)
 
-        def c4(a_net, gb, co2, rh, tleaf):
-            gs = self.stomata.stomatal_conductance(pressure, co2, a_net, gb, rh, tleaf)
-            cm = co2_mesophyll(ca, a_net, gs, gb)
+        def c4(a_net, co2, rh, tleaf):
+            self.stomata.update_stomata(pressure, co2, a_net, rh, tleaf)
+            cm = co2_mesophyll(ca, a_net, self.stomata)
 
             # PEP carboxylation rate, that is the rate of C4 acid generation
             vp1 = (cm * vpmax) / (cm + kp)
@@ -313,14 +328,15 @@ class GasExchange:
 
         def cost(x):
             a_net0 = x[0]
-            a_net1 = c4(a_net0, self.gb, self.co2, self.rh, self.tleaf)
+            a_net1 = c4(a_net0, self.co2, self.rh, self.tleaf)
             return (a_net0 - a_net1)**2
 
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         res = scipy.optimize.minimize(cost, [self.a_net], options={'disp': True})
         self.a_net = res.x[0]
-        self.gs = self.stomata.stomatal_conductance(pressure, self.co2, self.a_net, self.gb, self.rh, self.tleaf)
-        cm = co2_mesophyll(ca, self.a_net, self.gs, self.gb)
+
+        self.stomata.update_stomata(pressure, self.co2, self.a_net, self.rh, self.tleaf)
+        cm = co2_mesophyll(ca, self.a_net, self.stomata)
 
         os = alpha * self.a_net / (0.047*gbs) + om # Bundle sheath O2 partial pressure, mbar
         #cbs = cm + (vp - a_net -rm) / gbs # Bundle sheath CO2 partial pressure, ubar
@@ -342,14 +358,12 @@ class GasExchange:
         # variables
         ta = self.tair
         #ti = self.tleaf
-        gb = self.gb
-        gs = self.gs
         rh = self.rh
         r_abs = self.r_abs
         press = self.press
 
-        gha = gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
-        gv = self.stomata.total_conductance(gb, gs)
+        gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
+        gv = self.stomata.total_conductance_h20()
         gr = 4 * EPS * SBC * (273 + ta)**3 / cp *2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = EPS * SBC * (ta + 273)**4 * 2 # emitted thermal radiation
@@ -366,14 +380,12 @@ class GasExchange:
     def _evapotranspiration(self, ta, tleaf):
         #variables
         ta = self.tair
-        gb = self.gb
-        gs = self.gs
         rh = self.rh
         press = self.press
 
         self.vpd = Atmosphere.vapor_pressure_deficit(ta, rh)
 
-        gv = self.stomata.total_conductance(gb, gs)
+        gv = self.stomata.total_conductance_h20()
         ea = Atmosphere.vapor_pressure(ta, rh) # ambient vapor pressure
         es_leaf = Atmosphere.saturation_vapor_pressure(tleaf)
         et = gv * ((es_leaf - ea) / press) / (1 - (es_leaf + ea) / press)
