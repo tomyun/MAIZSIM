@@ -321,7 +321,7 @@ class Leaf:
         self.ET_supply = ET_supply
 
         # dynamic properties
-        self.T_leaf = None
+        self.temperature = None
 
         self.stomata = Stomata(width)
         self.stomata.update(atmos, water, A_net=0.)
@@ -361,19 +361,17 @@ class Leaf:
         #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
         res = scipy.optimize.minimize(cost, [0], options={'disp': True})
-        A_net = res.x[0]
+        self.A_net = res.x[0]
 
         #HACK ensure stomata state matches with the final A_net
-        update_stomata(A_net)
+        update_stomata(self. A_net)
 
-        Rd = self.photosynthesis._dark_respiration(T_leaf)
-        A_gross = max(0., A_net + Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+        self.Rd = self.photosynthesis._dark_respiration(T_leaf)
+        self.A_gross = max(0., self.A_net + self.Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
-        Ci = co2_mesophyll(A_net)
+        self.Ci = co2_mesophyll(self.A_net)
 
-        return (A_net, A_gross, Ci)
-
-    def optimize_energy(self):
+    def update_temperature(self):
         # see Campbell and Norman (1998) pp 224-225
         # because Stefan-Boltzman constant is for unit surface area by denifition,
         # all terms including sbc are multilplied by 2 (i.e., gr, thermal radiation)
@@ -413,6 +411,7 @@ class Leaf:
             T_leaf = T_air + (psc1 / (VaporPressure.curve_slope(T_air, P_air) + psc1)) * ((R_abs - thermal_air) / (ghr * Cp) - VPD / (psc1 * P_air))
         else:
             T_leaf = T_air + (R_abs - thermal_air - lamda * Jw) / (Cp * ghr)
+        self.temperature = T_leaf
         return T_leaf
 
 
@@ -432,12 +431,16 @@ class GasExchange:
         def cost(x):
             T_leaf0 = x[0]
             self.leaf.optimize_stomata(T_leaf0)
-            T_leaf1 = self.leaf.optimize_energy()
+            T_leaf1 = self.leaf.update_temperature()
             return (T_leaf0 - T_leaf1)**2
 
         res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
         self.T_leaf = res.x[0]
-        self.A_net, self.A_gross, self.Ci = self.leaf.optimize_stomata(self.T_leaf)
+
+        self.leaf.optimize_stomata(self.T_leaf)
+        self.A_net = self.leaf.A_net
+        self.A_gross = self.leaf.A_gross
+        self.Ci = self.leaf.Ci
 
         self._evapotranspiration(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
 
