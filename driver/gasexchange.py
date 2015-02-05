@@ -368,7 +368,7 @@ class Leaf:
         self.A_net = res.x[0]
 
         #HACK ensure stomata state matches with the final A_net
-        update_stomata(self. A_net)
+        update_stomata(self.A_net)
 
         self.Rd = self.photosynthesis._dark_respiration(T_leaf)
         self.A_gross = max(0., self.A_net + self.Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
