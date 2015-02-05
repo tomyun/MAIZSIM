@@ -358,9 +358,12 @@ class Leaf:
         def cost(x):
             I2 = light()
             A_net0 = x[0]
-            Cm = co2_mesophyll(A_net0)
-            A_net1 = self.photosynthesis.photosynthesize_c4(I2, Cm, T_leaf)
-            return (A_net0 - A_net1)**2
+            Cm0 = co2_mesophyll(A_net0)
+            A_net1 = self.photosynthesis.photosynthesize_c4(I2, Cm0, T_leaf)
+            Cm1 = co2_mesophyll(A_net1)
+            #FIXME can we just difference between A_net?
+            #return (A_net0 - A_net1)**2
+            return (Cm0 - Cm1)**2
 
         #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
