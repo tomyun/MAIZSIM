@@ -15,10 +15,6 @@
 import numpy as np
 import scipy.optimize
 
-#FIXME are they parameters?
-EPS = 0.97
-SBC = 5.6697e-8
-
 class VaporPressure:
     # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
     a = 0.611 # kPa
@@ -61,15 +57,6 @@ class Atmosphere:
 
     def setup(self, pfd, tair, co2, rh, wind, press):
         self.pfd = pfd
-        par = pfd / 4.55
-        # If total solar radiation unavailable, assume NIR the same energy as PAR waveband
-        nir = par
-
-        scatt = 0.15
-        # times 2 for projected area basis
-        self.r_abs = (1 - scatt)*par + 0.15*nir + 2*(EPS * SBC * (tair+273)**4)
-
-        # shortwave radiation (PAR (=0.85) + NIR (=0.15) solar radiation absorptivity of leaves: =~ 0.5
         self.co2 = co2
         self.rh = np.clip(rh, 10, 100) / 100.
         self.tair = tair # C
@@ -366,7 +353,7 @@ class GasExchange:
             #FIXME minimize side-effects in _photosynthesis()
             #FIXME stomata object is the one needs to be tracked in the loop, not a_net
             self.photosynthesis.photosynthesize(atmos.pfd, atmos.press, atmos.co2, atmos.rh, leafp, tleaf)
-            tleaf = self._energybalance(self.photosynthesis.stomata, atmos.tair, atmos.rh, atmos.r_abs, atmos.press, et_supply)
+            tleaf = self._energybalance(self.photosynthesis.stomata, atmos.tair, atmos.rh, atmos.pfd, atmos.press, et_supply)
             return tleaf
 
         def cost(x):
@@ -385,7 +372,7 @@ class GasExchange:
 
         self._evapotranspiration(self.photosynthesis.stomata, atmos.tair, atmos.rh, atmos.press, self.tleaf)
 
-    def _energybalance(self, stomata, ta, rh, r_abs, press, jw):
+    def _energybalance(self, stomata, ta, rh, pfd, press, jw):
         # see Campbell and Norman (1998) pp 224-225
         # because Stefan-Boltzman constant is for unit surface area by denifition,
         # all terms including sbc are multilplied by 2 (i.e., gr, thermal radiation)
@@ -393,12 +380,23 @@ class GasExchange:
         psc = 6.66e-4
         cp = 29.3 # thermodynamic psychrometer constant and specific hear of air (J mol-1 C-1)
 
+        EPS = 0.97
+        SBC = 5.6697e-8
+
         gha = stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
         gv = stomata.total_conductance_h20()
         gr = 4 * EPS * SBC * (273 + ta)**3 / cp *2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = EPS * SBC * (ta + 273)**4 * 2 # emitted thermal radiation
         psc1 = psc * ghr / gv # apparent psychrometer constant
+
+        par = pfd / 4.55
+        # If total solar radiation unavailable, assume NIR the same energy as PAR waveband
+        nir = par
+        scatt = 0.15
+        # shortwave radiation (PAR (=0.85) + NIR (=0.15) solar radiation absorptivity of leaves: =~ 0.5
+        # times 2 for projected area basis
+        r_abs = (1 - scatt)*par + 0.15*nir + 2*(EPS * SBC * (ta+273)**4)
 
         # debug dt I commented out the changes that yang made for leaf temperature for a test. I don't think they work
         if jw == 0:
