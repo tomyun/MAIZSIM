@@ -63,6 +63,10 @@ class Atmosphere:
         self.wind = wind # meters s-1
         self.P_air = P_air # kPa
 
+    @property
+    def VPD(self):
+        return VaporPressure.deficit(self.T_air, self.RH)
+
 
 class Stomata:
     def __init__(self, leaf_width):
@@ -413,6 +417,14 @@ class Leaf:
             T_leaf = T_air + (R_abs - thermal_air - lamda * Jw) / (Cp * ghr)
         return T_leaf
 
+    @property
+    def ET(self):
+        gv = self.stomata.total_conductance_h20()
+        ea = VaporPressure.ambient(self.atmos.T_air, self.atmos.RH)
+        es_leaf = VaporPressure.saturation(self.temperature)
+        ET = gv * ((es_leaf - ea) / self.atmos.P_air) / (1 - (es_leaf + ea) / self.atmos.P_air)
+        return max(0., ET) # 04/27/2011 dt took out the 1000 everything is moles now
+
 
 class GasExchange:
     def __init__(self, s_type, leaf_n_content):
@@ -442,18 +454,3 @@ class GasExchange:
         self.A_net = self.leaf.A_net
         self.A_gross = self.leaf.A_gross
         self.Ci = self.leaf.Ci
-
-        self._evapotranspiration(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
-
-    #FIXME better split into separate modules
-    def _evapotranspiration(self, stomata, T_air, RH, P_air, T_leaf):
-        #FIXME vpd should be in Atmosphere
-        self.VPD = VaporPressure.deficit(T_air, RH)
-
-        #FIXME et should be in Stomata
-        gv = stomata.total_conductance_h20()
-        ea = VaporPressure.ambient(T_air, RH)
-        es_leaf = VaporPressure.saturation(T_leaf)
-        ET = gv * ((es_leaf - ea) / P_air) / (1 - (es_leaf + ea) / P_air)
-        ET = max(0., ET) # 04/27/2011 dt took out the 1000 everything is moles now
-        self.ET = ET
