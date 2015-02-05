@@ -417,6 +417,19 @@ class Leaf:
             T_leaf = T_air + (R_abs - thermal_air - lamda * Jw) / (Cp * ghr)
         return T_leaf
 
+    def exchange(self):
+        def cost(x):
+            T_leaf0 = x[0]
+            self.optimize_stomata(T_leaf0)
+            T_leaf1 = self.update_temperature()
+            return (T_leaf0 - T_leaf1)**2
+
+        res = scipy.optimize.minimize(cost, [self.atmos.T_air], options={'disp': True})
+        self.temperature = res.x[0]
+
+        #HACK ensure leaf state matches with the final temperature
+        self.optimize_stomata(self.temperature)
+
     @property
     def ET(self):
         gv = self.stomata.total_conductance_h20()
@@ -434,23 +447,4 @@ class GasExchange:
     def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, LWP, ET_supply):
         self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
         self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
-
-        # override GasEx() function so as to pass leaf water potential
-        self._gasex_psil(self.atmos, ET_supply)
-
-    def _gasex_psil(self, atmos, ET_supply):
-        def cost(x):
-            T_leaf0 = x[0]
-            self.leaf.optimize_stomata(T_leaf0)
-            T_leaf1 = self.leaf.update_temperature()
-            return (T_leaf0 - T_leaf1)**2
-
-        res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
-        self.T_leaf = res.x[0]
-
-        self.leaf.temperature = self.T_leaf
-
-        self.leaf.optimize_stomata(self.T_leaf)
-        self.A_net = self.leaf.A_net
-        self.A_gross = self.leaf.A_gross
-        self.Ci = self.leaf.Ci
+        self.leaf.exchange()
