@@ -411,7 +411,6 @@ class Leaf:
             T_leaf = T_air + (psc1 / (VaporPressure.curve_slope(T_air, P_air) + psc1)) * ((R_abs - thermal_air) / (ghr * Cp) - VPD / (psc1 * P_air))
         else:
             T_leaf = T_air + (R_abs - thermal_air - lamda * Jw) / (Cp * ghr)
-        self.temperature = T_leaf
         return T_leaf
 
 
@@ -436,6 +435,8 @@ class GasExchange:
 
         res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
         self.T_leaf = res.x[0]
+
+        self.leaf.temperature = self.T_leaf
 
         self.leaf.optimize_stomata(self.T_leaf)
         self.A_net = self.leaf.A_net
