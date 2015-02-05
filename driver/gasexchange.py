@@ -374,36 +374,6 @@ class Leaf:
         return (A_net, A_gross, Ci)
 
     def optimize_energy(self):
-        #TODO from _energybalance()
-        pass
-
-
-class GasExchange:
-    def __init__(self, s_type, leaf_n_content):
-        self.s_type = s_type
-        self.leaf_n_content = leaf_n_content
-
-    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, LWP, ET_supply):
-        self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
-        self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
-
-        # override GasEx() function so as to pass leaf water potential
-        self._gasex_psil(self.atmos, ET_supply)
-
-    def _gasex_psil(self, atmos, ET_supply):
-        def cost(x):
-            T_leaf0 = x[0]
-            self.leaf.optimize_stomata(T_leaf0)
-            T_leaf1 = self._energybalance(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.PFD, atmos.P_air, ET_supply)
-            return (T_leaf0 - T_leaf1)**2
-
-        res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
-        self.T_leaf = res.x[0]
-        self.A_net, self.A_gross, self.Ci = self.leaf.optimize_stomata(self.T_leaf)
-
-        self._evapotranspiration(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
-
-    def _energybalance(self, stomata, T_air, RH, PFD, P_air, Jw):
         # see Campbell and Norman (1998) pp 224-225
         # because Stefan-Boltzman constant is for unit surface area by denifition,
         # all terms including sbc are multilplied by 2 (i.e., gr, thermal radiation)
@@ -414,10 +384,15 @@ class GasExchange:
         epsilon = 0.97
         sbc = 5.6697e-8
 
+        T_air = self.atmos.T_air
         Tk = T_air + 273.
+        RH = self.atmos.RH
+        PFD = self.atmos.PFD
+        P_air = self.atmos.P_air
+        Jw = self.ET_supply
 
-        gha = stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
-        gv = stomata.total_conductance_h20()
+        gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
+        gv = self.stomata.total_conductance_h20()
         gr = 4 * epsilon * sbc * Tk**3 / Cp * 2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = epsilon * sbc * Tk**4 * 2 # emitted thermal radiation
@@ -439,6 +414,32 @@ class GasExchange:
         else:
             T_leaf = T_air + (R_abs - thermal_air - lamda * Jw) / (Cp * ghr)
         return T_leaf
+
+
+class GasExchange:
+    def __init__(self, s_type, leaf_n_content):
+        self.s_type = s_type
+        self.leaf_n_content = leaf_n_content
+
+    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, LWP, ET_supply):
+        self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
+        self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
+
+        # override GasEx() function so as to pass leaf water potential
+        self._gasex_psil(self.atmos, ET_supply)
+
+    def _gasex_psil(self, atmos, ET_supply):
+        def cost(x):
+            T_leaf0 = x[0]
+            self.leaf.optimize_stomata(T_leaf0)
+            T_leaf1 = self.leaf.optimize_energy()
+            return (T_leaf0 - T_leaf1)**2
+
+        res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
+        self.T_leaf = res.x[0]
+        self.A_net, self.A_gross, self.Ci = self.leaf.optimize_stomata(self.T_leaf)
+
+        self._evapotranspiration(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
 
     #FIXME better split into separate modules
     def _evapotranspiration(self, stomata, T_air, RH, P_air, T_leaf):
