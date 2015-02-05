@@ -406,9 +406,12 @@ class GasExchange:
             tleaf = ta + (r_abs - thermal_air - lamda *jw) / (cp * ghr)
         return tleaf
 
+    #FIXME better split into separate modules
     def _evapotranspiration(self, stomata, ta, rh, press, tleaf):
+        #FIXME vpd should be in Atmosphere
         self.vpd = VaporPressure.deficit(ta, rh)
 
+        #FIXME et should be in Stomata
         gv = stomata.total_conductance_h20()
         ea = VaporPressure.ambient(ta, rh)
         es_leaf = VaporPressure.saturation(tleaf)
