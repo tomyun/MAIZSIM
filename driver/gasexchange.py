@@ -82,6 +82,13 @@ class Stomata:
         #FIXME initial value never used
         #self.leafp_effect = 1 # At first assume there is not drought stress, so assign 1 to leafpEffect. Yang 8/20/06
 
+    def update(self, atmos, LWP, A_net=0., T_leaf=None):
+        if T_leaf is None:
+            T_leaf = atmos.T_air
+
+        self.update_boundary_layer(atmos.wind)
+        self.update_stomata(LWP, atmos.CO2, A_net, atmos.RH, T_leaf)
+
     def update_boundary_layer(self, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
         sr = 1.0
@@ -157,9 +164,8 @@ class Stomata:
 
 
 class Photosynthesis:
-    def __init__(self, stomata, leaf_n_content):
+    def __init__(self, leaf_n_content):
         self.setup()
-        self.stomata = stomata
         self.leaf_n_content = leaf_n_content
 
     def setup(self):
@@ -197,22 +203,6 @@ class Photosynthesis:
         #self.lambda_l = 1.0e-12
         #self.K_max = 6.67e-3 # max. xylem conductance (mol m-2 s-1 MPa-1) from root to leaf, Dewar (2002)
 
-    def _light(self, PFD):
-        #FIXME make scatt global parameter?
-        scatt = 0.15 # leaf reflectance + transmittance
-        f = 0.15 #spectral correction
-
-        Ia = PFD * (1 - scatt) # absorbed irradiance
-        I2 = Ia * (1 - f) / 2. # useful light absorbed by PSII
-        return I2
-
-    # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
-    def _co2_mesophyll(self, A_net, P_air, CO2):
-        P = P_air / 100.
-        Ca = CO2 * P # conversion to partial pressure
-        Cm = Ca - A_net * self.stomata.total_resistance_co2() * P
-        return np.clip(Cm, 0., 2*Ca)
-
     # Arrhenius equation
     def _temperature_dependence_rate(self, Ea, T, Tb=25.):
         R = 8.314 # universal gas constant (J K-1 mol-1)
@@ -245,30 +235,6 @@ class Photosynthesis:
                          * self._temperature_dependence_rate(self.Eaj, T) \
                          * (1 + np.exp((Sj*Tbk - Hj) / (R*Tbk))) \
                          / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
-
-    # Incident PFD, Air temp in C, CO2 in ppm, RH in percent
-    #FIXME remove dependency on leaf parameters (LWP, tleaf)
-    def drive(self, PFD, P_air, CO2, RH, LWP, T_leaf):
-        def c4(A_net, P_air, CO2, RH, T_leaf):
-            I2 = self._light(PFD)
-
-            self.stomata.update_stomata(LWP, CO2, A_net, RH, T_leaf)
-            Cm = self._co2_mesophyll(A_net, P_air, CO2)
-
-            A_net = self.photosynthesize_c4(I2, Cm, T_leaf)
-            return A_net
-
-        def cost(x):
-            A_net0 = x[0]
-            A_net1 = c4(A_net0, P_air, CO2, RH, T_leaf)
-            return (A_net0 - A_net1)**2
-
-        #FIXME avoid passing self.stomata object to optimizer
-        # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
-        res = scipy.optimize.minimize(cost, [0], options={'disp': True})
-        A_net = res.x[0]
-        self.stomata.update_stomata(LWP, CO2, A_net, RH, T_leaf)
-        return A_net
 
     def photosynthesize_c4(self, I2, Cm, T_leaf):
         O = 210. # gas units are mbar
@@ -336,46 +302,106 @@ class Photosynthesis:
         return A_net
 
 
+class Leaf:
+    #TODO organize leaf properties like water (LWP), nitrogen content?
+    #TODO introduce a leaf geomtery class for leaf_width
+    #TODO introduce a soil class for ET_supply
+    def __init__(self, water, nitrogen, width, atmos, ET_supply):
+        # static properties
+        self.water = water
+        self.nitrogen = nitrogen
+
+        # geometry
+        self.width = width
+
+        # atmosphere
+        self.atmos = atmos
+
+        # soil
+        self.ET_supply = ET_supply
+
+        # dynamic properties
+        self.T_leaf = None
+
+        self.stomata = Stomata(width)
+        self.stomata.update(atmos, water, A_net=0.)
+
+        self.photosynthesis = Photosynthesis(nitrogen)
+
+    def optimize_stomata(self, T_leaf):
+        #FIXME is it right place? maybe need coordination with geometry object in the future
+        def light():
+            #FIXME make scatt global parameter?
+            scatt = 0.15 # leaf reflectance + transmittance
+            f = 0.15 # spectral correction
+
+            Ia = self.atmos.PFD * (1 - scatt) # absorbed irradiance
+            I2 = Ia * (1 - f) / 2. # useful light absorbed by PSII
+            return I2
+
+        def update_stomata(A_net):
+            self.stomata.update(self.atmos, self.water, A_net, T_leaf)
+
+        # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
+        def co2_mesophyll(A_net):
+            update_stomata(A_net)
+
+            P = self.atmos.P_air / 100.
+            Ca = self.atmos.CO2 * P # conversion to partial pressure
+            Cm = Ca - A_net * self.stomata.total_resistance_co2() * P
+            return np.clip(Cm, 0., 2*Ca)
+
+        def cost(x):
+            I2 = light()
+            A_net0 = x[0]
+            Cm = co2_mesophyll(A_net0)
+            A_net1 = self.photosynthesis.photosynthesize_c4(I2, Cm, T_leaf)
+            return (A_net0 - A_net1)**2
+
+        #FIXME avoid passing self.stomata object to optimizer
+        # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
+        res = scipy.optimize.minimize(cost, [0], options={'disp': True})
+        A_net = res.x[0]
+
+        #HACK ensure stomata state matches with the final A_net
+        update_stomata(A_net)
+
+        Rd = self.photosynthesis._dark_respiration(T_leaf)
+        A_gross = max(0., A_net + Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
+
+        Ci = co2_mesophyll(A_net)
+
+        return (A_net, A_gross, Ci)
+
+    def optimize_energy(self):
+        #TODO from _energybalance()
+        pass
+
+
 class GasExchange:
     def __init__(self, s_type, leaf_n_content):
         self.s_type = s_type
         self.leaf_n_content = leaf_n_content
 
-    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, leafp, ET_supply):
+    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, LWP, ET_supply):
         self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
-
-        stomata = Stomata(leaf_width)
-        stomata.update_boundary_layer(wind)
-        stomata.update_stomata(leafp, CO2, 0., RH, T_air)
-
-        self.photosynthesis = Photosynthesis(stomata, self.leaf_n_content)
+        self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
 
         # override GasEx() function so as to pass leaf water potential
-        self._gasex_psil(self.atmos, leafp, ET_supply)
+        self._gasex_psil(self.atmos, ET_supply)
 
-    def _gasex_psil(self, atmos, leafp, ET_supply):
-        def pseb(atmos, leafp, T_leaf):
-            #FIXME minimize side-effects in _photosynthesis()
-            #FIXME stomata object is the one needs to be tracked in the loop, not a_net
-            self.photosynthesis.drive(atmos.PFD, atmos.P_air, atmos.CO2, atmos.RH, leafp, T_leaf)
-            T_leaf = self._energybalance(self.photosynthesis.stomata, atmos.T_air, atmos.RH, atmos.PFD, atmos.P_air, ET_supply)
-            return T_leaf
-
+    def _gasex_psil(self, atmos, ET_supply):
         def cost(x):
             T_leaf0 = x[0]
-            T_leaf1 = pseb(atmos, leafp, T_leaf0)
+            self.leaf.optimize_stomata(T_leaf0)
+            T_leaf1 = self._energybalance(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.PFD, atmos.P_air, ET_supply)
             return (T_leaf0 - T_leaf1)**2
 
         res = scipy.optimize.minimize(cost, [atmos.T_air], options={'disp': True})
         self.T_leaf = res.x[0]
+        self.A_net, self.A_gross, self.Ci = self.leaf.optimize_stomata(self.T_leaf)
 
-        self.A_net = self.photosynthesis.drive(atmos.PFD, atmos.P_air, atmos.CO2, atmos.RH, leafp, self.T_leaf)
-        self.Ci = self.photosynthesis._co2_mesophyll(self.A_net, atmos.P_air, atmos.CO2)
-
-        Rd = self.photosynthesis._dark_respiration(self.T_leaf)
-        self.A_gross = max(0., self.A_net + Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
-
-        self._evapotranspiration(self.photosynthesis.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
+        self._evapotranspiration(self.leaf.stomata, atmos.T_air, atmos.RH, atmos.P_air, self.T_leaf)
 
     def _energybalance(self, stomata, T_air, RH, PFD, P_air, Jw):
         # see Campbell and Norman (1998) pp 224-225
