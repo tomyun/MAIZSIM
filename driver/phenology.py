@@ -1,4 +1,117 @@
-class Phenology:
+import numpy as np
+
+import stage
+
+class Phenology(object):
+    def __init__(self, timestep):
+        self.timestep = timestep
+        self.setup()
+
+    def setup(self):
+        self.germination = g = stage.Germination(self)
+        self.emergence = e = stage.Emergence(self)
+        self.leaf_initiation = li = stage.LeafInitiation(self)
+        self.leaf_appearance = la = stage.LeafAppearance(self)
+        self.tassel_initiation = ti = stage.TasselInitiation(self)
+        self.after_tassel_initiation = ati = stage.AfterTasselInitiation(self)
+        self.silking = s = stage.Silking(self)
+        self.grain_filling = gf = stage.GrainFilling(self)
+        #self.maturity = m = Maturity(self)
+
+        # mean growing season temperature since germination, SK 1-19-12
+        self.gst_tracker = gstt = stage.Tracker(self)
+        self.gdd_tracker = gddt = stage.GddTracker(self)
+        self.gti_tracker = gtit = stage.GtiTracker(self)
+
+        self.stages = [
+            g, e, li, la, ti, ati, s, gf,
+            gstt, gddt, gtit,
+        ]
+
+        # self.order = {
+        #     g: [e, li, la, ti, gstt, gddt_ae],
+        #     li: [ati],
+        #     la: [s],
+        #     s: [gf],
+        # }
+
+    def __getitem__(self, index):
+        return self.stages[index]
+
+    def update(self, T):
+        queue = [s for s in self.stages if s.ready() and not s.over()]
+
+        [s.update(T) for s in queue]
+        [s.post_update() for s in queue]
+
+        #FIXME remove finish() for simplicity
+        [s.finish(T) for s in queue if s.over()]
+
+
+    def update(self, T):
+        for stage in queue:
+            if stage.ready():
+                stage.update(T)
+            if stage.over():
+                next_stages = self.order[stage]
+                self.queue.extend(next_stages)
+                self.queue.remove(stage)
+                stage.finish()
+
+                #FIXME just for debugging & compatibility
+                print("* {}: GDDsum = {}, Growing season T = {}" % (self.gdd_tracker.rate, self.gst_tracker.rate)
+
+
+
+
+
+    def update(self):
+        if self.leaves_appeared < 9:
+            T_cur = wthr.soilT
+        else:
+            T_cur = wthr.airT
+        T_cur = max(0, T_cur)
+
+        # converting minute to day decimal, 1= a day
+        #dt = initInfo.timeStep/(24*60)
+
+        if not self.germinated:
+            self.germinate()
+        else:
+            T_grow_sum += T_cur
+            steps += 1
+            # mean growing season temperature since germination, SK 1-19-12
+            T_grow = T_grow_sum / steps
+
+            if not self.emerged:
+                self.emerge()
+
+            if not self.tassel_initiated:
+                self.tassel_initiate()
+            else:
+                # to be used for C partitoining time scaling, see Plant.cpp
+                phyllochrons_from_TI += self.beta_fn(T_cur, Rmax_LTAR, T_opt, T_ceil)
+
+            if leaves_appeared < int(leaves_initiated):
+                leaves_appeared += self.beta_fn(T_cur, Rmax_LTAR, T_opt, T_ceil)
+                leaves_appeared = min(leaves_appeared, int(leaves_initiated))
+
+            if self.tassel_initiated and leaves_appeared >= int(leaves_initiated) and not self.silking_done:
+                self.anthesis()
+
+            if self.silking_done:
+                self.grain_fill()
+
+        d_GTI = self.calc_GTI(T_cur, self.silking_done) * dt
+        d_GDD = self.calc_GDD(T_cur) * dt
+        GDD_sum += d_GDD
+        GTI_sum += d_GTI
+
+        if GDD_sum >= GDD_rating and not self.matured:
+            self.mature()
+
+
+class Development:
     def __init__(self, info):
         leaves_initiated = 0
         leaves_appeared = 0
@@ -200,6 +313,7 @@ class Phenology:
                 #TODO record event
                 tasselInitiation.done = True
                 tasselInitiation.daytime = wthr.daytime
+                self.tassel_initiated = True
 
                 leaves_initiated = youngest_leaf
                 leaves_at_TI = self.leaves_appeared
