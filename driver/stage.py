@@ -83,6 +83,7 @@ class Emergence(Stage):
 class LeafInitiation(Stage):
     def setup(self, R_max_LIR):
         self.R_max = R_max_LIR
+        self.leaves = 0
 
     def tracker(self):
         return BetaFunc(self.R_max)
@@ -131,25 +132,80 @@ class TasselInitiation(Stage):
 
 
 #FIXME better naming
+# to be used for C partitoining time scaling, see Plant.cpp
 class PhyllochronsFromTI(Stage):
-    pass
+    def setup(self, R_max_LTAR):
+        self.R_max = R_max_LTAR
+
+    def tracker(self):
+        return BetaFunc(self.R_max)
+
+    def ready(self):
+        return self.pheno.tassel_initiation.over()
 
 
 class LeafAppearance(Stage):
-    pass
+    def setup(self, R_max_LTAR):
+        self.R_max = R_max_LTAR
+        self.leaves = 0
 
+    def tracker(self):
+        return BetaFunc(self.R_max)
 
-#FIXME probably indicates Silking
-class AfterTasselInitiation(Stage):
-    pass
+    def post_update(self):
+        self.leaves = int(self.rate)
+
+    def ready(self):
+        initiated_leaves = self.pheno.leaf_initiation.leaves
+        return self.leaves < initiated_leaves
+
+    def over(self):
+        initiated_leaves = self.pheno.leaf_initiation.leaves
+        #HACK ensure leaves are initiated
+        return self.leaves >= initiated_leaves > 0
 
 
 class Silking(Stage):
-    pass
+    def setup(self, R_max_LTAR, phyllochrons):
+        self.R_max = R_max_LTAR
+        self.phyllochrons = phyllochrons
+
+    def tracker(self):
+        return BetaFunc(self.R_max)
+
+    def ready(self):
+        return self.pheno.tassel_initiation.over() and self.pheno.leaf_appearance.over()
+
+    def over(self):
+        # anthesis rate
+        return self.rate >= self.phyllochrons
+
+    def finish(self):
+         GDD_sum = self.pheno.gdd_tracker.rate
+         T_grow = self.pheno.gst_tracker.rate
+         print("* Silking: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
+
 
 
 class GrainFilling(Stage):
-    pass
+    # where is this number '170' from? SK
+    def setup(self, GDD_grain=170):
+        self.GDD_grain = GDD_grain
+
+    def tracker(self):
+        #TODO GTI was found more accurate for grain filling stage, See Thijs phenolog paper (2014)
+        return GrowingDegreeDays()
+
+    def ready(self):
+        return self.pheno.germination.over()
+
+    def over(self):
+        return self.rate >= self.GDD_grain
+
+    def finish(self):
+         GDD_sum = self.pheno.gdd_tracker.rate
+         T_grow = self.pheno.gst_tracker.rate
+         print("* Grain filling begins: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
 
 
 class GddTracker(Stage):

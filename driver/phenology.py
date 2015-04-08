@@ -13,7 +13,6 @@ class Phenology(object):
         self.leaf_initiation = li = stage.LeafInitiation(self)
         self.leaf_appearance = la = stage.LeafAppearance(self)
         self.tassel_initiation = ti = stage.TasselInitiation(self)
-        self.after_tassel_initiation = ati = stage.AfterTasselInitiation(self)
         self.silking = s = stage.Silking(self)
         self.grain_filling = gf = stage.GrainFilling(self)
         #self.maturity = m = Maturity(self)
@@ -24,7 +23,7 @@ class Phenology(object):
         self.gti_tracker = gtit = stage.GtiTracker(self)
 
         self.stages = [
-            g, e, li, la, ti, ati, s, gf,
+            g, e, li, la, ti, s, gf,
             gstt, gddt, gtit,
         ]
 
