@@ -315,7 +315,7 @@ class Driver:
     def _handle_not_germinated(self, w):
         # Assumes that germination takes place about halfway through the sowing date.
         if 0.49 <= w.time <= 0.51:
-            print w.jday
+            print(w.jday)
 
     def _handle_emerged(self, w, S):
         # pass appropriate data to 2DSOIL file structures
@@ -446,7 +446,7 @@ class Driver:
 
     def _handle_dead_or_not(self, M, T):
         if self.develop.Dead():
-            print "Completing crop simulation..."
+            print("Completing crop simulation...")
 
             # tell 2dsoil that crops harvested
             M.nshoot = 0
