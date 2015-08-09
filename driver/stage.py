@@ -100,30 +100,35 @@ class LeafInitiation(Stage):
 
 
 class TasselInitiation(Stage):
-    def setup(self, leaves_to_induce, juvenile_leaves, day_length):
+    def setup(self, juvenile_leaves, day_length):
         self.leaves_to_induce = leaves_to_induce
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
 
     def tracker(self):
-        #HACK create its own temperature tracker
-        tt = tracker.Tracker()
-        tt.update(self.pheno.gst_tracker.rate)
-        return tracker.LeafInductionRate(tt, self.juvenile_leaves, self.day_length)
+        return tracker.LeafInductionRate(self.pheno.gst_tracker.rate, self.juvenile_leaves, self.day_length)
+
+    @property
+    def initiated_leaves(self):
+        return self.pheno.leaf_initiation.leaves
+
+    @property
+    def added_leaves(self):
+        return self.initiated_leaves - self.juvenile_leaves
+
+    @property
+    def leaves_to_induce(self):
+        return int(self.rate)
 
     def ready(self):
-        initiated_leaves = self.pheno.leaf_initiation.leaves
-        return initiated_leaves >= self.juvenile_leaves
+        return self.initiated_leaves >= self.juvenile_leaves
 
     def over(self):
-        initiated_leaves = self.pheno.leaf_initiation.leaves
-        added_leaves = initiated_leaves - self.juvenile_leaves
-        return added_leaves >= self.leaves_to_induce
+        return self.added_leaves >= self.leaves_to_induce
 
     def finish(self):
         #TODO clean up leaf count variables
-        initiated_leaves = self.pheno.leaf_initiation.leaves
-        self.current_leaf = self.youngest_leaf = self.total_leaves = initiated_leaves
+        self.current_leaf = self.youngest_leaf = self.total_leaves = self.initiated_leaves
         #self.leaves_at_tassel_initiation = leaves_appeared?
 
         GDD_sum = self.pheno.gdd_tracker.rate

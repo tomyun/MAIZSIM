@@ -93,15 +93,16 @@ class ReproductiveGeneralThermalIndex(ThermalFunc):
 
 # note it's Tracker, not ThermalFunc
 class LeafInductionRate(Tracker):
-    def setup(self, temperature_tracker, juvenile_leaves, day_length=None):
-        self.temperature_tracker = tempearature_tracker
+    def setup(self, initial_temperature, juvenile_leaves, day_length=None):
+        self.temperature_tracker = Tracker()
+        self.temperature_tracker.update(initial_temperature)
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
 
     def calc(self, T):
         #HACK use mean temperature tracker for induction period
-        temperature_tracker.update(T)
-        T = temperature_tracker.rate
+        self.temperature_tracker.update(T)
+        T = self.temperature_tracker.rate
 
         # effect of photoperiod and temperature on leaf no. used as Grant (1989)
         # Added back the temperature effect on leaf number and revised the algorithm to accumulate addLeafNo to totLeafNo.
