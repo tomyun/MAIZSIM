@@ -200,7 +200,7 @@ class Silking(Stage):
          print("* Silking: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
-class GrainFilling(Stage):
+class GrainFillingInitiation(Stage):
     # where is this number '170' from? SK
     def setup(self, GDD_grain=170):
         self.GDD_grain = GDD_grain
