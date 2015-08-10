@@ -1,5 +1,3 @@
-import numpy as np
-
 import stage
 
 class Phenology(object):
