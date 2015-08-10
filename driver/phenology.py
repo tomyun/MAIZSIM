@@ -37,4 +37,4 @@ class Phenology(object):
         [s.post_update() for s in queue]
 
         #FIXME remove finish() for simplicity
-        [s.finish(T) for s in queue if s.over()]
+        [s.finish() for s in queue if s.over()]
