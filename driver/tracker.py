@@ -126,3 +126,8 @@ class LeafInductionRate(Tracker):
             by_photo_period = max(0., 0.1 * (self.juvenile_leaves - 10) * (self.day_length - 12.5))
 
         return by_temperature + by_photo_period
+
+    @property
+    def rate(self):
+        #HACK prevent warnings on nan due to empty _values
+        return np.nan if self.empty() else super().rate
