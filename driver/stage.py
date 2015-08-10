@@ -96,9 +96,8 @@ class LeafInitiation(Stage):
     def ready(self):
         return self.pheno.germination.over()
 
-    #FIXME should keep going until tassel initiation
     def over(self):
-        return self.pheno.tassel_initiation.ready()
+        return self.pheno.tassel_initiation.over()
 
 
 class TasselInitiation(Stage):
