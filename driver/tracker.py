@@ -46,7 +46,7 @@ class BetaFunc(ThermalFunc):
 
         if not T_min < T < T_max:
             return 0.
-        if not T_min < T_opt < T_maxx:
+        if not T_min < T_opt < T_max:
             return 0.
 
         f = (T - T_min) / (T_opt - T_min)
