@@ -83,9 +83,11 @@ class Emergence(Stage):
 
 
 class LeafInitiation(Stage):
-    def setup(self, R_max_LIR):
+    #FIXME use correct args
+    def setup(self, initial_leaves=5, R_max_LIR=0.0978):
+        self.initial_leaves = initial_leaves
+        self.leaves = initial_leaves
         self.R_max = R_max_LIR
-        self.leaves = 0
 
     def tracker(self):
         return tracker.BetaFunc(self.R_max)
@@ -101,7 +103,8 @@ class LeafInitiation(Stage):
 
 
 class TasselInitiation(Stage):
-    def setup(self, juvenile_leaves, day_length):
+    #FIXME use correct args
+    def setup(self, juvenile_leaves=15, day_length=None):
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
 
@@ -139,7 +142,8 @@ class TasselInitiation(Stage):
 #FIXME better naming
 # to be used for C partitoining time scaling, see Plant.cpp
 class PhyllochronsFromTI(Stage):
-    def setup(self, R_max_LTAR):
+    #FIXME use correct args
+    def setup(self, R_max_LTAR=0.53):
         self.R_max = R_max_LTAR
 
     def tracker(self):
@@ -150,7 +154,8 @@ class PhyllochronsFromTI(Stage):
 
 
 class LeafAppearance(Stage):
-    def setup(self, R_max_LTAR):
+    #FIXME use correct args
+    def setup(self, R_max_LTAR=0.53):
         self.R_max = R_max_LTAR
         self.leaves = 0
 
@@ -171,7 +176,8 @@ class LeafAppearance(Stage):
 
 
 class Silking(Stage):
-    def setup(self, R_max_LTAR, phyllochrons):
+    #FIXME use correct args
+    def setup(self, R_max_LTAR=0.53, phyllochrons=8):
         self.R_max = R_max_LTAR
         self.phyllochrons = phyllochrons
 
