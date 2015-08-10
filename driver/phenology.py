@@ -8,6 +8,11 @@ class Phenology(object):
         self.setup()
 
     def setup(self):
+        # mean growing season temperature since germination, SK 1-19-12
+        self.gst_tracker = gstt = stage.GstTracker(self)
+        self.gdd_tracker = gddt = stage.GddTracker(self)
+        self.gti_tracker = gtit = stage.GtiTracker(self)
+
         self.germination = g = stage.Germination(self)
         self.emergence = e = stage.Emergence(self)
         self.leaf_initiation = li = stage.LeafInitiation(self)
@@ -18,14 +23,10 @@ class Phenology(object):
         self.mature = m = stage.Mature(self)
         #self.maturity = m = Maturity(self)
 
-        # mean growing season temperature since germination, SK 1-19-12
-        self.gst_tracker = gstt = stage.Tracker(self)
-        self.gdd_tracker = gddt = stage.GddTracker(self)
-        self.gti_tracker = gtit = stage.GtiTracker(self)
 
         self.stages = [
-            g, e, li, la, ti, s, gfi, m,
             gstt, gddt, gtit,
+            g, e, li, la, ti, s, gfi, m,
         ]
 
     def __getitem__(self, index):
