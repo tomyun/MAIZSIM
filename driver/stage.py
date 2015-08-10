@@ -103,7 +103,6 @@ class LeafInitiation(Stage):
 
 class TasselInitiation(Stage):
     def setup(self, juvenile_leaves, day_length):
-        self.leaves_to_induce = leaves_to_induce
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
 
