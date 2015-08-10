@@ -123,7 +123,7 @@ class TasselInitiation(Stage):
 
     @property
     def leaves_to_induce(self):
-        return int(self.rate)
+        return self.rate
 
     def ready(self):
         return self.added_leaves >= 0
