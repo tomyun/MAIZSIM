@@ -121,7 +121,7 @@ class TasselInitiation(Stage):
         return int(self.rate)
 
     def ready(self):
-        return self.initiated_leaves >= self.juvenile_leaves
+        return self.added_leaves >= 0
 
     def over(self):
         return self.added_leaves >= self.leaves_to_induce
