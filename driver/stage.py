@@ -210,7 +210,7 @@ class GrainFilling(Stage):
         return tracker.GrowingDegreeDays()
 
     def ready(self):
-        return self.pheno.germination.over()
+        return self.pheno.silking.over()
 
     def over(self):
         return self.rate >= self.GDD_grain
