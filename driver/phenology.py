@@ -23,10 +23,12 @@ class Phenology(object):
         self.mature = m = stage.Mature(self)
         #self.maturity = m = Maturity(self)
 
+        self.phyllochrons_from_ti = pti = stage.PhyllochronsFromTI(self)
 
         self.stages = [
             gstt, gddt, gtit,
             g, e, li, la, ti, s, gfi, m,
+            pti,
         ]
 
     def __getitem__(self, index):
