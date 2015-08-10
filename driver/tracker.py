@@ -103,6 +103,7 @@ class LeafInductionRate(Tracker):
         self.gst_tracker = gst_tracker
         self.temperature_tracker = Tracker()
         self.juvenile_leaves = juvenile_leaves
+        #TODO: access atmos object to get day_length
         self.day_length = day_length
 
     def calc(self, T):
