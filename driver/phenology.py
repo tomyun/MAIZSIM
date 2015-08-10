@@ -34,8 +34,11 @@ class Phenology(object):
     def __getitem__(self, index):
         return self.stages[index]
 
+    def _queue(self):
+        return [s for s in self.stages if s.ready() and not s.over()]
+
     def update(self, T):
-        queue = [s for s in self.stages if s.ready() and not s.over()]
+        queue = self._queue()
 
         [s.update(T) for s in queue]
         [s.post_update() for s in queue]
