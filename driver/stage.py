@@ -54,7 +54,7 @@ class Germination(Stage):
     def finish(self):
         GDD_sum = self.pheno.gdd_tracker.rate
         dt = self.pheno.timestep * 24 * 60 # per min
-        print("* Germinated: GDDsum = {}, time step (min) = {}" % (GDD_sum, dt))
+        print("* Germinated: GDDsum = {}, time step (min) = {}".format(GDD_sum, dt))
 
 
 class Emergence(Stage):
@@ -73,7 +73,7 @@ class Emergence(Stage):
     def finish(self):
         GDD_sum = self.pheno.gdd_tracker.rate
         T_grow = self.pheno.gst_tracker.rate
-        print("* Emergence: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
+        print("* Emergence: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
         #HACK reset GDD tracker after emergence
         self.emerge_GDD = GDD_sum
@@ -133,7 +133,7 @@ class TasselInitiation(Stage):
 
         GDD_sum = self.pheno.gdd_tracker.rate
         T_grow = self.pheno.gst_tracker.rate
-        print("* Tassel initiation: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
+        print("* Tassel initiation: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
 #FIXME better naming
@@ -188,8 +188,7 @@ class Silking(Stage):
     def finish(self):
          GDD_sum = self.pheno.gdd_tracker.rate
          T_grow = self.pheno.gst_tracker.rate
-         print("* Silking: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
-
+         print("* Silking: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
 class GrainFilling(Stage):
@@ -210,7 +209,7 @@ class GrainFilling(Stage):
     def finish(self):
          GDD_sum = self.pheno.gdd_tracker.rate
          T_grow = self.pheno.gst_tracker.rate
-         print("* Grain filling begins: GDDsum = {}, Growing season T = {}" % (GDD_sum, T_grow))
+         print("* Grain filling begins: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
 class GddTracker(Stage):
