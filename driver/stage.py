@@ -1,3 +1,5 @@
+import tracker
+
 import numpy as np
 
 class Stage(object):
@@ -41,7 +43,7 @@ class Germination(Stage):
         self.R_max = R_max
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        return tracker.BetaFunc(self.R_max)
 
     def ready(self):
         #TODO implement germination rate model of temperature
@@ -62,7 +64,7 @@ class Emergence(Stage):
         self.R_max = R_max
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        return tracker.BetaFunc(self.R_max)
 
     def ready(self):
         return self.pheno.germination.over()
@@ -86,7 +88,7 @@ class LeafInitiation(Stage):
         self.leaves = 0
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        return tracker.BetaFunc(self.R_max)
 
     def post_update(self):
         self.leaves = int(self.rate)
@@ -143,7 +145,7 @@ class PhyllochronsFromTI(Stage):
         self.R_max = R_max_LTAR
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        return tracker.BetaFunc(self.R_max)
 
     def ready(self):
         return self.pheno.tassel_initiation.over()
@@ -155,7 +157,7 @@ class LeafAppearance(Stage):
         self.leaves = 0
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        return tracker.BetaFunc(self.R_max)
 
     def post_update(self):
         self.leaves = int(self.rate)
@@ -176,7 +178,8 @@ class Silking(Stage):
         self.phyllochrons = phyllochrons
 
     def tracker(self):
-        return BetaFunc(self.R_max)
+        # Assume 75% Silking occurs at total tip appeared + 3 phyllochrons
+        return tracker.BetaFunc(self.R_max)
 
     def ready(self):
         return self.pheno.tassel_initiation.over() and self.pheno.leaf_appearance.over()
@@ -198,7 +201,7 @@ class GrainFilling(Stage):
 
     def tracker(self):
         #TODO GTI was found more accurate for grain filling stage, See Thijs phenolog paper (2014)
-        return GrowingDegreeDays()
+        return tracker.GrowingDegreeDays()
 
     def ready(self):
         return self.pheno.germination.over()
