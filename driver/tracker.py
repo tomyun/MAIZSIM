@@ -17,6 +17,9 @@ class Tracker(object):
     def update(self, T, dt=1.):
         self._values.append(self.calc(T) * dt)
 
+    def empty(self):
+        return len(self._values) == 0
+
     @property
     def rate(self):
         return np.mean(self._values)
@@ -93,14 +96,16 @@ class ReproductiveGeneralThermalIndex(ThermalFunc):
 
 # note it's Tracker, not ThermalFunc
 class LeafInductionRate(Tracker):
-    def setup(self, initial_temperature, juvenile_leaves, day_length=None):
+    def setup(self, gst_tracker, juvenile_leaves, day_length=None):
+        self.gst_tracker = gst_tracker
         self.temperature_tracker = Tracker()
-        self.temperature_tracker.update(initial_temperature)
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
 
     def calc(self, T):
         #HACK use mean temperature tracker for induction period
+        if self.temperature_tracker.empty():
+            self.temperature_tracker.update(self.gst_tracker.rate)
         self.temperature_tracker.update(T)
         T = self.temperature_tracker.rate
 

@@ -106,7 +106,7 @@ class TasselInitiation(Stage):
         self.day_length = day_length
 
     def tracker(self):
-        return tracker.LeafInductionRate(self.pheno.gst_tracker.rate, self.juvenile_leaves, self.day_length)
+        return tracker.LeafInductionRate(self.pheno.gst_tracker, self.juvenile_leaves, self.day_length)
 
     @property
     def initiated_leaves(self):
