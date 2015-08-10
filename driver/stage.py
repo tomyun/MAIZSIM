@@ -90,10 +90,12 @@ class LeafInitiation(Stage):
         self.R_max = R_max_LIR
 
     def tracker(self):
-        return tracker.BetaFunc(self.R_max)
+        t = tracker.BetaFunc(self.R_max)
+        t.set_initial_value(self.initial_leaves)
+        return t
 
     def post_update(self):
-        self.leaves = int(self.rate)
+        self.leaves = self.initial_leaves + int(self.rate)
 
     def ready(self):
         return self.pheno.germination.over()

@@ -14,6 +14,9 @@ class Tracker(object):
     def calc(self, T):
         return T
 
+    def set_initial_value(self, value):
+        self._values = [value]
+
     def update(self, T, dt=1.):
         self._values.append(self.calc(T) * dt)
 
