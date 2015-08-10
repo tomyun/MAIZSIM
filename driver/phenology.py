@@ -15,6 +15,7 @@ class Phenology(object):
         self.tassel_initiation = ti = stage.TasselInitiation(self)
         self.silking = s = stage.Silking(self)
         self.grain_filling_initiation = gfi = stage.GrainFillingInitiation(self)
+        self.mature = m = stage.Mature(self)
         #self.maturity = m = Maturity(self)
 
         # mean growing season temperature since germination, SK 1-19-12
@@ -23,7 +24,7 @@ class Phenology(object):
         self.gti_tracker = gtit = stage.GtiTracker(self)
 
         self.stages = [
-            g, e, li, la, ti, s, gfi,
+            g, e, li, la, ti, s, gfi, m,
             gstt, gddt, gtit,
         ]
 
