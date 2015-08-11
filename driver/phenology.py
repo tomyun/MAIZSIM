@@ -43,3 +43,35 @@ class Phenology(object):
 
         #FIXME remove finish() for simplicity
         [s.finish() for s in queue if s.over()]
+
+    ############
+    # Accessor #
+    ############
+
+    @property
+    def leaves_total(self):
+        return self.leaf_initiation.leaves
+
+    @property
+    def leaves_generic(self):
+        #TODO from TInitInfo
+        return 15
+
+    @property
+    def leaves_appeared(self):
+        return self.leaf_appearance.leaves
+
+    #TODO is it relevant here?
+    @property
+    def temperature(self):
+        #TODO modify update() to get Atmos object...
+        return T
+
+    @property
+    def growing_temperature(self):
+        return self.gst_tracker.rate
+
+    @property
+    def optimal_temperature(self):
+        #TODO parmaterize?
+        return 32.1

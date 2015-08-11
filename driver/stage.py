@@ -13,7 +13,7 @@ class Stage(object):
 
     #TODO use @ decorator instead?
     def tracker(self):
-        raise NotImplementedError("Need to create a list of ThermalFunc objects.")
+        raise NotImplementedError("Need to create a list of Accumulator objects.")
 
     #TODO prevent duplicate updates
     def update(self, T):
@@ -141,7 +141,7 @@ class TasselInitiation(Stage):
         print("* Tassel initiation: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
-#FIXME better naming
+#FIXME better naming... isn't it a duplicate of Silking?
 # to be used for C partitoining time scaling, see Plant.cpp
 class PhyllochronsFromTI(Stage):
     #FIXME use correct args

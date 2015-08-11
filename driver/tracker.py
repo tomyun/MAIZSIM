@@ -1,7 +1,8 @@
 import numpy as np
 
 class Tracker(object):
-    def __init__(self, *args):
+    def __init__(self, timestep=1, *args):
+        self.timestep = timestep
         self.reset()
         self.setup(*args)
 
@@ -17,8 +18,8 @@ class Tracker(object):
     def set_initial_value(self, value):
         self._values = [value]
 
-    def update(self, T, dt=1.):
-        self._values.append(self.calc(T) * dt)
+    def update(self, T):
+        self._values.append(self.calc(T) * self.timestep)
 
     def empty(self):
         return len(self._values) == 0
@@ -27,19 +28,23 @@ class Tracker(object):
     def rate(self):
         return np.mean(self._values)
 
+    @property
+    def period(self):
+        return len(self._values) * self.timestep
 
-class ThermalFunc(Tracker):
+
+class Accumulator(Tracker):
     @property
     def rate(self):
         return np.sum(self._values)
 
 
-class BetaFunc(ThermalFunc):
+class BetaFunc(Accumulator):
     def setup(self, R_max, T_opt=32.1, T_max=43.7, T_min=0.):
         self.R_max = R_max
-        self.T_opt = T_opt * 1.
-        self.T_max = T_max * 1.
-        self.T_min = T_min * 1.
+        self.T_opt = T_opt
+        self.T_max = T_max
+        self.T_min = T_min
 
         # beta function, See Yin et al. (1995), Ag For Meteorol., Yan and Hunt (1999) AnnBot, SK
         self.beta = 1.0
@@ -51,32 +56,46 @@ class BetaFunc(ThermalFunc):
         T_min = self.T_min
 
         if not T_min < T < T_max:
-            return 0.
+            return 0
         if not T_min < T_opt < T_max:
-            return 0.
+            return 0
 
         f = (T - T_min) / (T_opt - T_min)
         g = (T_max - T) / (T_max - T_opt)
         return self.R_max * f**self.alpha * g**self.beta
 
 
-class GrowingDegreeDays(ThermalFunc):
-    # GDD model with base 8. See Birch et al. (2003) Eu J Agron
-    #T_opt = 30.0
-    def setup(self, T_base=8.0, T_opt=34.0):
-        self.T_base = T_base * 1.
-        self.T_opt = T_opt * 1.
+class Q10Func(Accumulator):
+    def setup(self, T_opt, Q10=2.0):
+        self.T_opt = T_opt
+        self.Q10 = Q10
 
     def calc(self, T):
-        return min(T, self.T_opt) - self.T_base
+        return self.Q10 ** ((T - self.T_opt) / 10)
+
+
+class GrowingDegreeDays(Accumulator):
+    # GDD model with base 8. See Birch et al. (2003) Eu J Agron
+    #T_opt = 30.0
+    def setup(self, T_base=8.0, T_opt=34.0, T_max=None):
+        self.T_base = T_base
+        self.T_opt = T_opt
+        self.T_max = T_max
+
+    def calc(self, T):
+        if self.T_opt is not None:
+            T = min(T, self.T_opt)
+        if self.T_max is not None:
+            T = self.T_base if T >= self.T_max else T
+        return T - self.T_base
 
 
 #TODO merge vegetative/reproductive versions
-class GeneralThermalIndex(ThermalFunc):
+class GeneralThermalIndex(Accumulator):
     pass
 
 
-class VegetativeGeneralThermalIndex(ThermalFunc):
+class VegetativeGeneralThermalIndex(Accumulator):
     def setup(self, b=0.043177, c=-0.000894):
         self.b = b
         self.c = c
@@ -85,7 +104,7 @@ class VegetativeGeneralThermalIndex(ThermalFunc):
         return self.b*T**2 + self.c*T**3
 
 
-class ReproductiveGeneralThermalIndex(ThermalFunc):
+class ReproductiveGeneralThermalIndex(Accumulator):
     # General Thermal Index, Stewart et al. (1998)
     # Phenological temperature response of maize. Agron. J. 90: 73-79.
     def setup(self, a=5.3581, b=0.011178):
@@ -97,7 +116,7 @@ class ReproductiveGeneralThermalIndex(ThermalFunc):
         #a = 1 - 0.6667 * T/T_opt
         return self.a + self.b*T**2
 
-# note it's Tracker, not ThermalFunc
+# note it's Tracker, not Accumulator
 class LeafInductionRate(Tracker):
     def setup(self, gst_tracker, juvenile_leaves, day_length=None):
         self.gst_tracker = gst_tracker
