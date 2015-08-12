@@ -5,6 +5,8 @@ class Weight(object):
     C = 12.011
     CH2O = 30.03
 
+    C_to_CH2O_ratio = C / CH2O # 0.40
+
 
 class Organ(object):
     def __init__(self):
@@ -38,9 +40,13 @@ class Organ(object):
     @property
     def mass(self):
         #FIXME isn't it just the amount of carbohydrate?
-        #return self.carbohydrate
-        C_to_CH2O_ratio = Weight.C / Weight.CH2O # 0.40
-        return self.carbohydrate / Weight.CH2O * Weight.C / C_to_CH2O_ratio
+        #return self.carbohydrate / Weight.CH2O * Weight.C / Weight.C_to_CH2O_ratio
+        return self.carbohydrate
+
+    #TODO remove set_mass() and directly access carbohydrate
+    def set_mass(self, mass):
+        #self.carbohydrate = mass * Weight.C_to_CH2O_ratio / Weight.C * Weight.CH2O
+        self.carbohydrate = mass
 
     # physiological days to reach the end of growth (both cell division and expansion) at optimal temperature, days
     @property
@@ -65,9 +71,12 @@ class Organ(object):
     def actual_carbohydrate_increment(self):
         return 0
 
-    def update(self, T):
+    def _update(self, T):
         self.temperature = T
         self._tracker.update(T)
+
+    def update(self):
+        raise NotImplementedError("Requires update method.")
 
     def import_carbohydrate(self, amount):
         self.carbohydrate += amount

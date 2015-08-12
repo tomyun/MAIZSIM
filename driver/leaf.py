@@ -15,9 +15,6 @@ class Leaf(Organ):
     def setup(self):
         self.rank = self.nodal_unit.rank
 
-        # temporary for now - it should vary by age. Value comes from some of Soo's work
-        self.specific_leaf_area = 200.0
-
         # no N stress
         self.nitrogen_content = 3.0
 
@@ -203,6 +200,11 @@ class Leaf(Organ):
         return np.min(water_effect, carbon_effect) * self.potential_area_increase
 
     @property
+    def relative_area_increase(self):
+        # adapted from CPlant::calcPerLeafRelativeAreaIncrease()
+        return self.potential_area_increase / self.nodal_unit.plant.potential_leaf_area_increase
+
+    @property
     # actual area
     def area(self):
         return self._area_tracker.rate
@@ -274,6 +276,12 @@ class Leaf(Organ):
         #return rate * timestep * self.area
         return self.senescence_ratio * self.area
 
+    @property
+    def specific_leaf_area(self):
+        # temporary for now - it should vary by age. Value comes from some of Soo's work
+        #return 200.0
+        return self.area / self.mass
+
 
     ##########
     # States #
@@ -314,7 +322,7 @@ class Leaf(Organ):
 
     #FIXME signature mismatch with Organ: T vs predawn_lwp
     #TODO put predawn_lwp in Atmos or Soil object
-    def update(self, predawn_lwp):
+    def update(self):
         super().update(self.pheno.temperature)
         self.expand()
         self.senescence()

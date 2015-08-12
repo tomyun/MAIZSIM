@@ -451,3 +451,23 @@ class GasExchange:
         self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
         self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
         self.leaf.exchange()
+
+    @property
+    def A_gross(self):
+        return self.leaf.A_gross
+
+    @property
+    def A_net(self):
+        return self.leaf.A_net
+
+    @property
+    def ET(self):
+        return self.leaf.ET
+
+    @property
+    def VPD(self):
+        return VaporPressure.deficit(self.atmos.T_air, self.atmo.RH)
+
+    @property
+    def gs(self):
+        return self.leaf.stomata.gs

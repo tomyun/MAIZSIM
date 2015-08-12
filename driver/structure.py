@@ -1,6 +1,5 @@
-class Stem(object):
-    pass
-
+from leaf import Leaf
+from stem import Stem
 
 from enum import Enum
 
@@ -13,8 +12,9 @@ class State(Enum):
     terminated = 6
 
 class NodalUnit(object):
-    def __init__(self, pheno, rank, mass):
-        self.pheno = pheno
+    def __init__(self, plant, rank, mass):
+        self.plant = plant
+        self.pheno = plant.pheno
         self.rank = rank
         self.leaf = Leaf(self)
         self.stem = Stem(self)
@@ -27,6 +27,7 @@ class NodalUnit(object):
     def mass(self):
         return self.leaf.mass + self.stem.mass
 
-    def update(self, predawn_lwp):
+    #TODO handle predawn_lp elsewhere
+    def update(self):
         self.leaf.update()
         self.stem.update()

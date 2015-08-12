@@ -1,3 +1,4 @@
+#from .tracker import BetaFunc, GrowingDegreeDays, VegetativeGeneralThermalIndex, ReproductiveGeneralThermalIndex, LeafInductionRate
 import tracker
 
 import numpy as np
@@ -32,6 +33,9 @@ class Stage(object):
 
     def over(self):
         return False
+
+    def ing(self):
+        return self.ready() and not self.over()
 
     #HACK better way to handle callback?
     def finish(self):

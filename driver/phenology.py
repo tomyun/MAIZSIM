@@ -1,3 +1,4 @@
+#from . import stage
 import stage
 
 class Phenology(object):
@@ -58,6 +59,10 @@ class Phenology(object):
         return 15
 
     @property
+    def leaves_initiated(self):
+        return self.leaf_initiation.leaves
+
+    @property
     def leaves_appeared(self):
         return self.leaf_appearance.leaves
 
@@ -75,3 +80,23 @@ class Phenology(object):
     def optimal_temperature(self):
         #TODO parmaterize?
         return 32.1
+
+    @property
+    def germinating(self):
+        return self.germination.ing()
+
+    @property
+    def emerging(self):
+        return self.emergence.ing()
+
+    @property
+    def dying(self):
+        pass
+
+    @property
+    def gdd_after_emergence(self):
+        if self.emergence.over():
+            #HACK tracker is reset when emergence is over
+            return self.gst_tracker.rate
+        else:
+            return 0
