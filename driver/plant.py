@@ -4,8 +4,41 @@ from gasexchange import GasExchange
 
 import numpy as np
 
-#TODO make mixin?
-class Mass:
+class PlantTait:
+    def __init__(self, plant):
+        self.p = plant
+
+
+class Ratio(PlantTrait):
+    @property
+    def carbon_to_mass(self):
+        # Weight.C_to_CH2O_ratio
+        # 40% C, See Kim et al. (2007) EEB
+        return 0.40
+
+    @property
+    def shoot_to_root(self):
+        return 0.7
+
+    @property
+    def root_to_shoot(self):
+        return 1 - self.shoot_to_root
+
+    @property
+    def leaf_to_stem(self):
+        return 0.9
+
+    @property
+    def stem_to_leaf(self):
+        return 1 - self.leaf_to_stem
+
+    @property
+    def initial_leaf(self):
+        #TODO how to handle primordia?
+        return self.shoot_to_root * self.leaf_to_stem / self.p.primordia
+
+
+class Mass(PlantTrait):
     @property
     def seed(self):
         # seed weight g/seed
@@ -13,31 +46,40 @@ class Mass:
 
     @property
     def stem(self):
-        pass
-
-    @property
-    def leaf(self):
-        pass
+        # dt the addition of C_reserve here only serves to maintain a total for the mass. It could have just as easily been added to total mass.
+        # C_reserve is added to stem here to represent soluble TNC, SK
+        return sum([nu.stem.mass for nu in self.p.nodal_units]) + self.p.carbon.reserve
 
     @property
     def initial_leaf(self):
-        return self.seed * self.initial_leaf_ratio
+        return self.seed * self.p.ratio.initial_leaf
 
+    # this is the total mass of active leaves that are not entirely dead (e.g., dropped).
+    # It would be slightly greather than the green leaf mass because some senesced leaf area is included until they are complely aged (dead), SK
     @property
     def active_leaf(self):
-        pass
+        return sum([nu.leaf.mass for nu in self.p.nodal_units if not nu.dropped])
 
     @property
     def dropped_leaf(self):
-        pass
+        return sum([nu.leaf.mass for nu in self.p.nodal_units if nu.dropped])
+
+    @property
+    def total_leaf(self):
+        # this should equal to activeLeafMass + droppedLeafMass
+        return sum([nu.leaf.mass for nu in self.p.nodal_units])
+
+    @property
+    def leaf(self):
+        return self.total_leaf
 
     @property
     def ear(self):
-        pass
+        return self.p.ear.mass
 
     @property
     def root(self):
-        pass
+        return self.p.root.mass
 
     @property
     def shoot(self):
@@ -47,19 +89,132 @@ class Mass:
     def total(self):
         return self.shoot + self.root
 
+    # this will only be used for total leaf area adjustment.
+    # If the individual leaf thing works out this will be deleted.
+    @property
+    def potential_carbon_demand(self):
+        # Just a mocking value for now. Need to find a more mechanistic way to simulate change in SLA YY
+        # SK 8/20/10: changed it to 200 cm2/g based on data from Kim et al. (2007) EEB
+        SLA = 200
+
+        # units are biomass not carbon
+        leaf_mass_demand = self.p.area.potential_leaf_increase / SLA
+        # potential_carbon_demand = carbon_demand # for now only carbon demand for leaf is calculated.
+        return leaf_mass_demand
+
+
+class Area(PlantTrait):
+    @property
+    def leaf(self):
+        return sum([nu.leaf.area for nu in self.p.nodal_units])
+
+    @property
+    def green_leaf(self):
+        return sum([nu.leaf.green_area for nu in self.p.nodal_units])
+
+    #TODO remove if unnecessary
+    @property
+    def active_leaf(self):
+        return self.green_leaf / self.leaf
+
+    # actualgreenArea is the green area of leaf growing under carbon limitation
+	#SK 8/22/10: There appears to be no distinction between these two variables in the code.
+    @property
+    def actual_green_leaf(self):
+        return self.green_leaf
+
+    @property
+    def senescent_leaf(self):
+        return sum([nu.leaf.senescent_area for nu in self.p.nodal_units])
+
+    @property
+    def potential_leaf(self):
+        return sum([nu.leaf.potential_area for nu in self.p.nodal_units])
+
+    @property
+    def potential_leaf_increase(self):
+        return sum([nu.leaf.potential_area_increase for nu in self.p.nodal_units])
+
+    # calculate relative area increases for leaves now that they are updated
+    @property
+    def per_leaf_relative_increase(self):
+        return sum([nu.leaf.relative_area_increase for nu in self.p.nodal_units])
+
+
+class Count(PlantTraint):
+    @property
+    def total_growing_leaves(self):
+        return sum([nu.leaf.growing for nu in self.p.nodal_units])
+
+    @property
+    def total_dropped_leaves(self):
+        return sum([nu.leaf.dropped for nu in self.p.nodal_units])
+
+
+class Carbon(PlantTrait):
+    @property
+    def reserve(self):
+        if self.p.pheno.emerging:
+            return self.p.mass.seed * self.p.ratio.carbon_to_mass
+        pass
+
+    @property
+    def pool(self):
+        if self.p.pheno.emerging:
+            # assume it takes 20 days to exhaust seed C reserve
+            # C_pool += C_reserve * (1/20) * (1/24) * (initInfo.timeStep / 60)
+            return self.reserve
+
+
+class Nitrogen(PlantTrait):
+    # SK: get N fraction allocated to leaves, this code is just moved from the end of the procedure, this may be taken out to become a separate fn
+
+    @property
+    def leaf_fraction(self):
+        # Calculate faction of nitrogen in leaves (leaf NFraction) as a function of thermal time from emergence
+        # Equation from Lindquist et al. 2007 YY
+        #SK 08/20/10: TotalNitrogen doesn't seem to be updated at all anywhere else since initialized from the seed content
+        #SK: I see this is set in crop.cpp ln 253 from NUptake from 2dsoil
+        # but this appears to be the amount gained from the soil for the time step; so how does it represent totalNitrogen of a plant?
+
+        # record thermal time from emergency YY
+        tt = self.p.pheno.gdd_after_emergence
+
+        # Calculate faction of nitrogen in leaves (leaf NFraction) as a function of thermal time from emergence
+        # Equation from Lindquist et al. 2007 YY
+        fraction = 0.79688 - 0.00023747 * tt - 0.000000086145 * tt**2
+
+        # fraction of leaf n in total shoot n can't be smaller than zero. YY
+        return np.max(0, fraction)
+
+    @property
+    def leaf(self):
+        # calculate total nitrogen amount in the leaves YY units are grams N in all the leaves
+        return self.leaf_fraction * self.p.nitrogen
+
+    @property
+    def leaf_content(self):
+        #SK 8/22/10: set avg greenleaf N content before update in g/m2
+        return self.leaf / (self.p.area.green_leaf / 10000)
+
 
 #TODO split into multiple mixins
-class Plant(Mass):
+class Plant:
     def __init__(self, info):
         #timestep = info...
         #TODO pass PRIMORDIA as initial_leaves
         self.primordia = 5
+
         self.pheno = Phenology(timestep)
         self.mass = Mass(self)
+        self.area = Area(self)
+        self.count = Count(self)
+        self.carbon = Carbon(self)
+
         self.setup_structure()
 
     def setup_structure(self):
-        self.roots = None
+        self.root = None
         self.ear = None
         self.nodal_units = []
 
@@ -77,14 +232,14 @@ class Plant(Mass):
             ) for i in range(self.primordia)
         ]
 
-    def initiate_roots(self):
+    def initiate_root(self):
         # here we calculate the mass of roots that were initialized in the soil model (read in with the element data)
         # This is so there is no discontinuity in root mass (relative to the carbon supplied by the plant later)
         # these are roots taht grew from the seed
 
-        self.roots = Roots()
+        self.root = Root()
         #TODO use weather.TotalRootWeight from 2DSOIL
-        self.roots.import_carbohydrate(soil.total_root_weight)
+        self.root.import_carbohydrate(soil.total_root_weight)
 
     def initiate_leaves(self):
         for i in range(self.pheno.leaves_initiated):
@@ -97,169 +252,6 @@ class Plant(Mass):
     def update_leaves(self):
         [nu.update() for nu in self.nodal_units]
 
-    #########
-    # Ratio #
-    #########
-
-    @property
-    def carbon_to_mass_ratio(self):
-        # Weight.C_to_CH2O_ratio
-        # 40% C, See Kim et al. (2007) EEB
-        return 0.40
-
-    @property
-    def shoot_to_root_ratio(self):
-        return 0.7
-
-    @property
-    def root_to_shoot_ratio(self):
-        return 1 - self.shoot_ratio
-
-    @property
-    def leaf_to_stem_ratio(self):
-        return 0.9
-
-    @property
-    def stem_to_leaf_ratio(self):
-        return 1 - self.leaf_to_stem_ratio
-
-    @property
-    def initial_leaf_ratio(self):
-        return self.shoot_to_root_ratio * self.leaf_to_stem_ratio / self.primordia
-
-    ##########
-    # Carbon #
-    ##########
-
-    @property
-    def carbon_reserve(self):
-        if self.pheno.emerging:
-            return self.mass.seed * self.carbon_to_mass_ratio
-        pass
-
-    @property
-    def carbon_pool(self):
-        if self.pheno.emerging:
-            # assume it takes 20 days to exhaust seed C reserve
-            # C_pool += C_reserve * (1/20) * (1/24) * (initInfo.timeStep / 60)
-            return self.carbon_reserve
-
-    ##########
-    # Leaves #
-    ##########
-
-    @property
-    def total_growing_leaves(self):
-        return sum([nu.leaf.growing for nu in self.nodal_units])
-
-    @property
-    def total_dropped_leaves(self):
-        return sum([nu.leaf.dropped for nu in self.nodal_units])
-
-    # Area
-
-    @property
-    def leaf_area(self):
-        return sum([nu.leaf.area for nu in self.nodal_units])
-
-    @property
-    def green_leaf_area(self):
-        return sum([nu.leaf.green_area for nu in self.nodal_units])
-
-    #TODO remove if unnecessary
-    @property
-    def active_leaf_ratio(self):
-        return self.green_leaf_area / self.leaf_area
-
-    # actualgreenArea is the green area of leaf growing under carbon limitation
-	#SK 8/22/10: There appears to be no distinction between these two variables in the code.
-    @property
-    def actual_green_leaf_area(self):
-        return self.green_leaf_area
-
-    @property
-    def senescent_leaf_area(self):
-        return sum([nu.leaf.senescent_area for nu in self.nodal_units])
-
-    @property
-    def potential_leaf_area(self):
-        return sum([nu.leaf.potential_area for nu in self.nodal_units])
-
-    @property
-    def potential_leaf_area_increase(self):
-        return sum([nu.leaf.potential_area_increase for nu in self.nodal_units])
-
-    # calculate relative area increases for leaves now that they are updated
-    @property
-    def per_leaf_relative_area_increase(self):
-        return sum([nu.leaf.relative_area_increase for nu in self.nodal_units])
-
-    ########
-    # Mass #
-    ########
-
-    # this is the total mass of active leaves that are not entirely dead (e.g., dropped).
-    # It would be slightly greather than the green leaf mass because some senesced leaf area is included until they are complely aged (dead), SK
-    @property
-    def active_leaf_mass(self):
-        return sum([nu.leaf.mass for nu in self.nodal_units if not nu.dropped])
-
-    @property
-    def dropped_leaf_mass(self):
-        return sum([nu.leaf.mass for nu in self.nodal_units if nu.dropped])
-
-    @property
-    def total_leaf_mass(self):
-        # this should equal to activeLeafMass + droppedLeafMass
-        return sum([nu.leaf.mass for nu in self.nodal_units])
-
-    # this will only be used for total leaf area adjustment.
-    # If the individual leaf thing works out this will be deleted.
-    @property
-    def potential_carbon_demand(self):
-        # Just a mocking value for now. Need to find a more mechanistic way to simulate change in SLA YY
-        # SK 8/20/10: changed it to 200 cm2/g based on data from Kim et al. (2007) EEB
-        SLA = 200
-
-        # units are biomass not carbon
-        leaf_mass_demand = self.potential_leaf_area_increase / SLA
-        # potential_carbon_demand = carbon_demand # for now only carbon demand for leaf is calculated.
-        return leaf_mass_demand
-
-    ############
-    # Nitrogen #
-    ############
-
-    # SK: get N fraction allocated to leaves, this code is just moved from the end of the procedure, this may be taken out to become a separate fn
-
-    @property
-    def leaf_nitrogen_fraction(self):
-        # Calculate faction of nitrogen in leaves (leaf NFraction) as a function of thermal time from emergence
-        # Equation from Lindquist et al. 2007 YY
-        #SK 08/20/10: TotalNitrogen doesn't seem to be updated at all anywhere else since initialized from the seed content
-        #SK: I see this is set in crop.cpp ln 253 from NUptake from 2dsoil
-        # but this appears to be the amount gained from the soil for the time step; so how does it represent totalNitrogen of a plant?
-
-        # record thermal time from emergency YY
-        tt = self.pheno.gdd_after_emergence
-
-        # Calculate faction of nitrogen in leaves (leaf NFraction) as a function of thermal time from emergence
-        # Equation from Lindquist et al. 2007 YY
-        fraction = 0.79688 - 0.00023747 * tt - 0.000000086145 * tt**2
-
-        # fraction of leaf n in total shoot n can't be smaller than zero. YY
-        return np.max(0, fraction)
-
-    @property
-    def leaf_nitrogen(self):
-        # calculate total nitrogen amount in the leaves YY units are grams N in all the leaves
-        return self.leaf_nitrogen_fraction * self.nitrogen
-
-    @property
-    def leaf_nitrogen_content(self):
-        #SK 8/22/10: set avg greenleaf N content before update in g/m2
-        return self.leaf_nitrogen / (self.green_leaf_area / 10000)
-
     ##########
     # Update #
     ##########
@@ -271,7 +263,7 @@ class Plant(Mass):
         if pheno.germinating():
             #TODO temperature setting?
         elif pheno.emerging():
-            self.initiate_roots()
+            self.initiate_root()
 
             #TODO temperature setting?
 
@@ -300,14 +292,14 @@ class Plant(Mass):
         leaf_width = 5.0 # to be calculated when implemented for individal leaves
 
         #TODO handle plant_density from initInfo object
-        LAI = self.green_leaf_area * initInfo.plant_density / 100**2
+        LAI = self.area.green_leaf * initInfo.plant_density / 100**2
 
         #TODO how do we get LeafWP and ET_supply?
         LWP = weather.LeafWP
         ET_supply = weather.ET_supply * initInfo.plant_density / 3600 / 18.01 / LAI
 
-        sunlit = GasExchange('Sunlit', self.leaf_nitrogen_content)
-        shaded = GasExchange('Shaded', self.leaf_nitrogen_content)
+        sunlit = GasExchange('Sunlit', self.nitrogen.leaf_content)
+        shaded = GasExchange('Shaded', self.nitrogen.leaf_content)
 
         #TODO lightenv.dll needs to be translated to C++. It slows down the execution, 3/16/05, SK
         lightenv.radTrans2(weather.jday, weather.time, initInfo.latitude, initInfo.longitude, weather.solRad, weather.PFD, LAI, LAF)
@@ -318,13 +310,13 @@ class Plant(Mass):
 
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
         sunlit.set_val_psil(
-             lightenv..sunlitPFD(),
+             lightenv.sunlitPFD(),
              atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
              leaf_width, LWP, ET_supply
         )
 
         shaded.set_val_psil(
-             lightenv..shadedPFD(),
+             lightenv.shadedPFD(),
              atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
              leaf_width, LWP, ET_supply
         )
