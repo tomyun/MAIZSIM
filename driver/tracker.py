@@ -126,9 +126,11 @@ class LeafInductionRate(Tracker):
         self.day_length = day_length
 
     def calc(self, T):
+        #TODO implement on_first_update() interface?
         #HACK use mean temperature tracker for induction period
         if self.temperature_tracker.empty():
             self.temperature_tracker.update(self.gst_tracker.rate)
+        #TODO use chained methods
         self.temperature_tracker.update(T)
         T = self.temperature_tracker.rate
 

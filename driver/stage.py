@@ -115,6 +115,7 @@ class TasselInitiation(Stage):
     def setup(self, juvenile_leaves=15, day_length=None):
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
+        self._appeared_leaves = None
 
     def tracker(self):
         return tracker.LeafInductionRate(self.pheno.gst_tracker, self.juvenile_leaves, self.day_length)
@@ -125,11 +126,19 @@ class TasselInitiation(Stage):
 
     @property
     def added_leaves(self):
-        return self.initiated_leaves - self.juvenile_leaves
+        return np.min(0, self.initiated_leaves - self.juvenile_leaves)
 
     @property
     def leaves_to_induce(self):
         return self.rate
+
+    @property
+    def appeared_leaves(self):
+        return self._appeared_leaves
+
+    @property
+    def leaves_to_appear(self):
+        return self.initiated_leaves - self.appeared_leaves
 
     def ready(self):
         return self.added_leaves >= 0
@@ -140,7 +149,8 @@ class TasselInitiation(Stage):
     def finish(self):
         #TODO clean up leaf count variables
         self.current_leaf = self.youngest_leaf = self.total_leaves = self.initiated_leaves
-        #self.leaves_at_tassel_initiation = leaves_appeared?
+        #HACK save the appeared leaves when tassel initiation is done
+        self._appeared_leaves = self.pheno.leaf_appearance.leaves
 
         GDD_sum = self.pheno.gdd_tracker.rate
         T_grow = self.pheno.gst_tracker.rate
@@ -149,7 +159,7 @@ class TasselInitiation(Stage):
 
 #FIXME better naming... isn't it a duplicate of Silking?
 # to be used for C partitoining time scaling, see Plant.cpp
-class PhyllochronsFromTI(Stage):
+class PtiTracker(Stage):
     #FIXME use correct args
     def setup(self, R_max_LTAR=0.53):
         self.R_max = R_max_LTAR
@@ -185,6 +195,7 @@ class LeafAppearance(Stage):
 
 class Silking(Stage):
     #FIXME use correct args
+    #TODO check the correct phyllochrons: is it 8 or 3?
     def setup(self, R_max_LTAR=0.53, phyllochrons=8):
         self.R_max = R_max_LTAR
         self.phyllochrons = phyllochrons

@@ -588,8 +588,43 @@ class Plant:
              self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
 
+    # Carbon allocation
+
+    def _temperature_effect(self, T_air):
+        # this needs to be f of temperature, source/sink relations, nitrogen, and probably water
+        # a valve function is necessary because assimilates from CPool cannot be dumped instantanesly to parts
+        # this may be used for implementing feedback inhibition due to high sugar content in the leaves
+        # The following is based on Grant (1989) AJ 81:563-571
+
+        # Normalized (0 to 1) temperature response fn parameters, Pasian and Lieth (1990)
+        # Lieth and Pasian Scientifica Hortuculturae 46:109-128 1991
+        # parameters were fit using rose data -
+        b1 = 2.325152587
+        b2 = 0.185418876 # I'm using this because it can have broad optimal region unlike beta fn or Arrhenius eqn
+        b3 = 0.203535650
+        Td = 48.6 #High temperature compensation point
+        T = np.min(T_air, Td)
+
+        #FIXME use capped T as g2 for consistency?
+        g1 = 1 + np.exp(b1 - b2 * T_air)
+        g2 = 1 - np.exp(-b3 * (Td - T))
+        return g2 / g1
+
+    @property
+    def _growth_factor(self):
+        # translocation limitation and lag, assume it takes 1 hours to complete, 0.2=5 hrs
+        # this is where source/sink (supply/demand) valve can come in to play
+        # 0.2 is value for hourly interval, Grant (1989)
+        return 1 / (5 * 60 / info.time_step)
+
+    @property
+    def _scale(self):
+        # see Grant (1989), #of phy elapsed since TI/# of phy between TI and silking
+        return self.pheno.phyllochrons_from_tassel_initiation / self.pheno.tassel_initiation.leaves_to_appear
+
+
     def allocate_carbon(self, atmos):
-        pass
+
 
     # based on McCree's paradigm, See McCree(1988), Amthor (2000), Goudriaan and van Laar (1994)
     # units very important here, be explicit whether dealing with gC, gCH2O, or gCO2

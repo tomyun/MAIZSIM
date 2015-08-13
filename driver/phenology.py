@@ -25,12 +25,12 @@ class Phenology(object):
         self.maturity = m2 = stage.Maturity(self)
         self.death = d = stage.Death(self)
 
-        self.phyllochrons_from_ti = pti = stage.PhyllochronsFromTI(self)
+        self.pti_tracker = ptit = stage.PtiTracker(self)
 
         self.stages = [
             gstt, gddt, gtit,
             g, e, li, la, ti, s, gfi, m1, m2, d,
-            pti,
+            ptit,
         ]
 
     def __getitem__(self, index):
@@ -56,6 +56,7 @@ class Phenology(object):
     # Accessor #
     ############
 
+    #FIXME same as leaves_initiated
     @property
     def leaves_total(self):
         return self.leaf_initiation.leaves
@@ -107,3 +108,7 @@ class Phenology(object):
             return self.gst_tracker.rate
         else:
             return 0
+
+    @property
+    def phyllochrons_from_tassel_initiation(self):
+        return self.pti_tracker.rate
