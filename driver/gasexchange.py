@@ -14,6 +14,7 @@
 
 import numpy as np
 import scipy.optimize
+import copy
 
 class VaporPressure:
     # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
@@ -62,6 +63,9 @@ class Atmosphere:
         self.T_air = T_air # C
         self.wind = wind # meters s-1
         self.P_air = P_air # kPa
+
+    def copy(self):
+        return copy.copy(self)
 
     @property
     def VPD(self):
@@ -306,7 +310,7 @@ class Photosynthesis:
         return A_net
 
 
-class Leaf:
+class PhotosyntheticLeaf:
     #TODO organize leaf properties like water (LWP), nitrogen content?
     #TODO introduce a leaf geomtery class for leaf_width
     #TODO introduce a soil class for ET_supply
@@ -443,13 +447,12 @@ class Leaf:
 
 
 class GasExchange:
-    def __init__(self, s_type, leaf_n_content):
-        self.s_type = s_type
+    def __init__(self, s_type):
         self.leaf_n_content = leaf_n_content
 
-    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_width, LWP, ET_supply):
+    def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_n_content, leaf_width, LWP, ET_supply):
         self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
-        self.leaf = Leaf(LWP, self.leaf_n_content, leaf_width, self.atmos, ET_supply)
+        self.leaf = PhotosyntheticLeaf(LWP, leaf_n_content, leaf_width, self.atmos, ET_supply)
         self.leaf.exchange()
 
     @property
@@ -463,6 +466,10 @@ class GasExchange:
     @property
     def ET(self):
         return self.leaf.ET
+
+    @property
+    def T_leaf(self):
+        return self.leaf.temperature
 
     @property
     def VPD(self):

@@ -7,6 +7,10 @@ import numpy as np
 class PlantTait:
     def __init__(self, plant):
         self.p = plant
+        self.setup()
+
+    def setup(self):
+        pass
 
 
 class Ratio(PlantTrait):
@@ -114,8 +118,13 @@ class Area(PlantTrait):
 
     #TODO remove if unnecessary
     @property
-    def active_leaf(self):
+    def active_leaf_ratio(self):
         return self.green_leaf / self.leaf
+
+    @property
+    def leaf_area_index(self):
+        #TODO handle info.plant_density
+        return self.green_leaf * info.plant_density / 100**2
 
     # actualgreenArea is the green area of leaf growing under carbon limitation
 	#SK 8/22/10: There appears to be no distinction between these two variables in the code.
@@ -198,9 +207,175 @@ class Nitrogen(PlantTrait):
         return self.leaf / (self.p.area.green_leaf / 10000)
 
 
+#TODO rename to CarbonAssimilation or so? could be consistently named as CarbonPartition, CarbonAllocation...
+class Photosynthesis(PlantTrait):
+    def setup(self):
+        self.sunlit_leaf = GasExchange('Sunlit')
+        self.shaded_leaf = GasExchange('Shaded')
+
+    @property
+    def sunlit_leaf_area_index(self):
+        return self.p.lightenv.sunlitLAI()
+
+    @property
+    def shaded_leaf_area_index(self):
+        return self.p.lightenv.shadedLAI()
+
+    @property
+    def leaf_area_index_array(self):
+        return np.array([
+            self.sunlit_leaf_area_index,
+            self.shaded_leaf_area_index,
+        ])
+
+    def _weighted(self, array):
+        return self.leaf_area_index_array.dot(array)
+
+    @property
+    def gross_array(self):
+        return np.array([
+            self.sunlit.A_gross,
+            self.shaded.A_gross,
+        ])
+
+    @property
+    def net_array(self):
+        return np.array([
+            self.sunlit.A_net,
+            self.shaded.A_net,
+        ])
+
+    @property
+    def evapotranspiration_array(self):
+        return np.array([
+            self.sunlit.ET,
+            self.shaded.ET,
+        ])
+
+    @property
+    def temperature_array(self):
+        return np.array([
+            self.sunlit.T_leaf,
+            self.shaded.T_leaf,
+        ])
+
+    @property
+    def conductance_array(self):
+        return np.array([
+            self.sunlit.gs,
+            self.shaded.gs,
+        ])
+
+    @property
+    def gross_CO2_umol_per_m2_s(self):
+        return self._weighted(self.gross_array)
+
+    # plantsPerMeterSquare units are umol CO2 m-2 ground s-1
+    # in the following we convert to g C plant-1 per hour
+    # photosynthesis_gross is umol CO2 m-2 leaf s-1
+
+    @property
+    def net_CO2_umol_per_m2_s(self):
+        # grams CO2 per plant per hour
+        return self._weighted(self.net_array)
+
+    @property
+    def transpiration_H2O_mol_per_m2_s(self):
+        #TODO need to save this?
+        # when outputting the previous step transpiration is compared to the current step's water uptake
+        #self.transpiration_old = self.transpiration
+        #FIXME need to check if LAIs are negative?
+        #transpiration = sunlit.ET * max(0, sunlit_LAI) + shaded.ET * max(0, shaded_LAI)
+        return self._weighted(self.evapotranspiration_array)
+
+    #TODO consolidate unit conversions somewhere else
+
+    @property
+    def _mol_per_umol(self):
+        return 1 / 1e6
+
+    @property
+    def _plant_per_m2(self):
+        return 1 / initInfo.plant_density
+
+    @property
+    def _min_step_per_sec(self):
+        return 60 * initInfo.time_step
+
+    # final values
+
+    @property
+    def assimilate(self):
+        # grams CO2 per plant per hour
+        return np.prod([
+            self.gross_CO2_umol_per_m2_s,
+            self._mol_per_umol,
+            self._plant_per_m2,
+            self._min_step_per_sec,
+            Weight.CO2,
+        ])
+
+    @property
+    def gross(self):
+        # grams carbo per plant per hour
+        return np.prod([
+            self.gross_CO2_umol_per_m2_s,
+            self._mol_per_umol,
+            self._plant_per_m2,
+            self._min_step_per_sec,
+            Weight.CH2O,
+        ])
+
+    @property
+    def net(self):
+        # grams carbo per plant per hour
+        return np.prod([
+            self.net_CO2_umol_per_m2_s,
+            self._mol_per_umol,
+            self._plant_per_m2,
+            self._min_step_per_sec,
+            Weight.CH2O,
+        ])
+
+    @property
+    def transpiration(self):
+        # Units of Transpiration from sunlit->ET are mol m-2 (leaf area) s-1
+        # Calculation of transpiration from ET involves the conversion to gr per plant per hour
+        #FIXME _min_step_per_sec used instead of fixed 3600 = 60 * 60
+        return np.prod([
+            self.transpiration_H2O_mol_per_m2_s,
+            self._plant_per_m2,
+            self._min_step_per_sec,
+            Weight.H2O,
+        ])
+
+    @property
+    def temperature(self):
+        return self._weighted(self.temperature_array)
+
+    #TODO is it needed?
+    @property
+    def vapor_pressure_deficit(self):
+        return self.sunlit.VPD
+
+    @property
+    def conductance(self):
+        #TODO is this condition necessary?
+        #if sunlit_LAI >= 0 and shaded_LAI >= 0 and LAI >= 0:
+        try:
+            # average stomatal conductance Yang
+            c = self._weighted(self.conductance_array) / self.p.area.leaf_area_index
+            return np.max(0, c)
+        except ZeroDivisionError:
+            return 0
+
+
 #TODO split into multiple mixins
 class Plant:
     def __init__(self, info):
+        #TODO implement InitInfo alternatives
+        self.info = info
+
         #timestep = info...
         #TODO pass PRIMORDIA as initial_leaves
         self.primordia = 5
@@ -212,6 +387,8 @@ class Plant:
         self.carbon = Carbon(self)
 
         self.setup_structure()
+        self.setup_nitrogen()
+        self.setup_photosynthesis()
 
     def setup_structure(self):
         self.root = None
@@ -292,68 +469,32 @@ class Plant:
         leaf_width = 5.0 # to be calculated when implemented for individal leaves
 
         #TODO handle plant_density from initInfo object
-        LAI = self.area.green_leaf * initInfo.plant_density / 100**2
+        LAI = self.area.leaf_area_index
 
         #TODO how do we get LeafWP and ET_supply?
         LWP = weather.LeafWP
         ET_supply = weather.ET_supply * initInfo.plant_density / 3600 / 18.01 / LAI
 
-        sunlit = GasExchange('Sunlit', self.nitrogen.leaf_content)
-        shaded = GasExchange('Shaded', self.nitrogen.leaf_content)
-
+        #TODO integrate lightenv with Atmosphere class?
         #TODO lightenv.dll needs to be translated to C++. It slows down the execution, 3/16/05, SK
-        lightenv.radTrans2(weather.jday, weather.time, initInfo.latitude, initInfo.longitude, weather.solRad, weather.PFD, LAI, LAF)
+        self.lightenv.radTrans2(weather.jday, weather.time, initInfo.latitude, initInfo.longitude, weather.solRad, weather.PFD, LAI, LAF)
         # temp7 = lightenv.getNIRtot()
 
         # Calculating transpiration and photosynthesis without stomatal control Y
         # call SetVal_NC()
 
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
-        sunlit.set_val_psil(
+        self.sunlit.set_val_psil(
              lightenv.sunlitPFD(),
              atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
-             leaf_width, LWP, ET_supply
+             self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
 
-        shaded.set_val_psil(
+        self.shaded.set_val_psil(
              lightenv.shadedPFD(),
              atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
-             leaf_width, LWP, ET_supply
+             self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
-
-        sunlit_LAI = lightenv.sunlitLAI()
-        shaded_LAI = lightenv.shadedLAI()
-
-        #TODO need to save this?
-        # plantsPerMeterSquare units are umol CO2 m-2 ground s-1
-        self.photosynthesis_gross = sunlit.A_gross * sunlit_LAI + shaded.A_gross * shaded_LAI
-        self.photosynthesis_net = sunlit.A_net * sunlit_LAI + shaded.A_net * shaded_LAI
-
-        # photosynthesis_gross is umol CO2 m-2 leaf s-1
-        # in the following we convert to g C plant-1 per hour
-        unit = (60.0 * initInfo.time_step) / initInfo.plant_density / 1.0e6
-        self.assimilate = photosynthesis_gross * Weight.CO2 * unit # grams CO2 per plant per hour
-        self.photosynthesis_gross *= Weight.CH2O * unit # grams carbo per plant per hour
-        self.photosynthesis_net *= Weight.CH2O * unit # grams carbo per plant per hour
-
-        #TODO need to save this?
-        # when outputting the previous step transpiration is compared to the current step's water uptake
-        self.transpiration_old = self.transpiration
-        #FIXME need to check if LAIs are negative?
-        transpiration = sunlit.ET * max(0, sunlit_LAI) + shaded.ET * max(0, shaded_LAI)
-        # plantsPerMeterSquare units are grams per plant per hour
-        transpiration /= initInfo.plant_density * 3600 * 18.01
-
-        #TODO need to save this?
-        self.VPD = sunlit.VPD
-
-        #TODO is this condition necessary?
-        #if sunlit_LAI >= 0 and shaded_LAI >= 0 and LAI >= 0:
-        try:
-            # average stomatal conductance Yang
-            self.conductance = np.max(0, (sunlit.gs * sunlit_LAI + shaded.gs * shaded_LAI) / LAI)
-        except ZeroDivisionError:
-            self.conductance = 0
 
     def carbon_allocation(self, atmos):
         pass
