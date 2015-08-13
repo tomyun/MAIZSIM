@@ -6,7 +6,8 @@ import numpy as np
 class Leaf(Organ):
     def __init__(self, nodal_unit):
         self.nodal_unit = nodal_unit
-        self.pheno = nodal_unit.pheno
+        self.plant = nodal_unit.plant
+        self.pheno = plant.pheno
         self._elongation_tracker = BetaFunc(timestep=1/24/60, R_max=1.0)
         self._area_tracker = Accumulator(timestep=1/24/60)
         self._aging_tracker = Q10Func(timestep=1/24/60, T_opt=self.pheno.optimal_temperature)
@@ -14,9 +15,6 @@ class Leaf(Organ):
 
     def setup(self):
         self.rank = self.nodal_unit.rank
-
-        # no N stress
-        self.nitrogen_content = 3.0
 
         #FIXME other means to store?
         self.mature_gdd = None
@@ -221,7 +219,7 @@ class Leaf(Organ):
     @property
     def stay_green_duration(self):
         # SK 8/20/10: as in Sinclair and Horie, 1989 Crop sciences, N availability index scaled between 0 and 1 based on
-        #nitrogen_index = np.max(0, (2 / (1 + np.exp(-2.9 * (self.nitrogen_content - 0.25))) - 1))
+        #nitrogen_index = np.max(0, (2 / (1 + np.exp(-2.9 * (self.g_content - 0.25))) - 1))
 
         # scale for reduction in leaf lifespan and aging rate
         if self.mature:
@@ -282,6 +280,15 @@ class Leaf(Organ):
         #return 200.0
         return self.area / self.mass
 
+
+    # Nitrogen
+
+    @property
+    def nitrogen(self):
+        #TODO is this default value needed?
+        # no N stress
+        #return 3.0
+        return self.plant.nitrogen.leaf_content
 
     ##########
     # States #

@@ -43,10 +43,20 @@ class Ratio(PlantTrait):
 
 
 class Mass(PlantTrait):
+    def setup(self):
+        # seed weight g/seed
+        self._seed = 0.275
+
     @property
     def seed(self):
-        # seed weight g/seed
-        return 0.275
+        return self._seed
+
+    #TODO handle carbon supply from the seed
+    @property
+    def reduce_seed(self, supply):
+        supply = np.min(self._seed, supply)
+        self._seed -= supply
+        return supply
 
     @property
     def stem(self):
@@ -161,23 +171,72 @@ class Count(PlantTraint):
 
 
 class Carbon(PlantTrait):
-    @property
-    def reserve(self):
-        if self.p.pheno.emerging:
-            return self.p.mass.seed * self.p.ratio.carbon_to_mass
-        pass
+    def setup(self):
+        self.reserve = 0
+        self.pool = 0
 
-    @property
-    def pool(self):
-        if self.p.pheno.emerging:
-            # assume it takes 20 days to exhaust seed C reserve
-            # C_pool += C_reserve * (1/20) * (1/24) * (initInfo.timeStep / 60)
-            return self.reserve
+    def translocate_to_pool(self, amount=None):
+        if amount is None:
+            amount = self.reserve
+        else:
+            amount = np.min(self.reserve, amount)
+        self.reserve -= amount
+        self.pool += amount
+
+    def assimilate_to_pool(self, amount=None):
+        amount = self.p.photosynthesis.assimilation
+        self.pool += amount
+
+    def reset_pool(self):
+        # reset shorterm C_pool to zero at midnight, needs to be more mechanistic
+        #FIXME need np.max(0, self.pool)?
+        self.reserve += self.pool
+        self.pool = 0
+
+    def allocate_with_seed(self):
+        self.reserve = self.p.mass.seed * self.p.ratio.carbon_to_mass
+        # assume it takes 20 days to exhaust seed C reserve
+        #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (initInfo.timeStep / 60))
+        self.translocate_to_pool()
+        #FIXME the original code did not reset pool here
 
 
+#TODO move into Leaf class?
 class Nitrogen(PlantTrait):
     # SK: get N fraction allocated to leaves, this code is just moved from the end of the procedure, this may be taken out to become a separate fn
 
+    def setup(self):
+        # assume nitrogen concentration at the beginning is 3.4% of the total weight of the seed
+        # need to check with Yang. This doesn't look correct
+        self.set_pool(self.p.mass.seed * 0.034)
+
+    def set_pool(self, pool):
+        shoot_mass = self.p.mass.shoot
+        if shoot_mass * self.p.info.plant_density <= 100: # g m-2
+            # when shoot biomass is lower than 100 g/m2, the maximum [N] allowed is 6.3%
+            # shoot biomass and Nitrogen are in g
+            # need to adjust demand or else there will be mass balance problems
+            pool = np.min(0.63 * shoot_mass, pool)
+        self._pool = pool
+
+    @property
+    def pool(self):
+        return self._pool
+
+    #TODO for 2DSOIL interface
+    def uptake_from_soil(self, amount):
+        self.set_pool(self.pool + amount)
+
+    #TODO currently not implemented in the original code
+    def remobilize(self):
+        pass
+        #droppedLfArea = (1-greenLeafArea/potentialLeafArea)*potentialLeafArea; //calculated dropped leaf area YY
+        #SK 8/20/10: Changed it to get all non-green leaf area
+        #currentDroppedLfArea = droppedLfArea - previousDroppedlfArea; //leaf dropped at this time step
+        #this->set_N((this->get_N()-(leaf_N/leafArea)*currentDroppedLfArea)); //calculated the total amount of nitrogen after the dropped leaves take some nitrogen out
+        #no nitrogen remobilization from old leaf to young leaf is considered for now YY
+
+    #TODO rename to `leaf_to_plant_ratio`? or just keep it?
     @property
     def leaf_fraction(self):
         # Calculate faction of nitrogen in leaves (leaf NFraction) as a function of thermal time from emergence
@@ -196,15 +255,20 @@ class Nitrogen(PlantTrait):
         # fraction of leaf n in total shoot n can't be smaller than zero. YY
         return np.max(0, fraction)
 
+    #TODO rename to `leaves`?
     @property
     def leaf(self):
         # calculate total nitrogen amount in the leaves YY units are grams N in all the leaves
-        return self.leaf_fraction * self.p.nitrogen
+        return self.leaf_fraction * self.pool
 
+    #TODO rename to `unit_leaf`?
+    # Calculate leaf nitrogen content of per unit area
     @property
     def leaf_content(self):
+        # defining leaf nitrogen content this way, we did not consider the difference in leaf nitrogen content
+        # of sunlit and shaded leaf yet YY
         #SK 8/22/10: set avg greenleaf N content before update in g/m2
-        return self.leaf / (self.p.area.green_leaf / 10000)
+        return self.leaf / (self.p.area.green_leaf / (100**2))
 
 
 #TODO rename to CarbonAssimilation or so? could be consistently named as CarbonPartition, CarbonAllocation...
@@ -305,7 +369,7 @@ class Photosynthesis(PlantTrait):
     # final values
 
     @property
-    def assimilate(self):
+    def assimilation(self):
         # grams CO2 per plant per hour
         return np.prod([
             self.gross_CO2_umol_per_m2_s,
@@ -385,20 +449,16 @@ class Plant:
         self.area = Area(self)
         self.count = Count(self)
         self.carbon = Carbon(self)
+        self.nitrogen = Nitrogen(self)
+        self.photosynthesis = Photosynthesis(self)
 
+        #TODO make another trait object for the structure?
         self.setup_structure()
-        self.setup_nitrogen()
-        self.setup_photosynthesis()
 
     def setup_structure(self):
         self.root = None
         self.ear = None
         self.nodal_units = []
-
-    def setup_nitrogen(self):
-        # assume nitrogen concentration at the beginning is 3.4% of the total weight of the seed
-        # need to check with Yang. This doesn't look correct
-        self.nitrogen = self.mass.seed * 0.034
 
     def initiate_primordia(self):
         self.nodal_units = [
@@ -427,6 +487,12 @@ class Plant:
                 self.nodal_units.append(nu)
 
     def update_leaves(self):
+        #SK 8/22/10: set leaf N content before each nodal unit is updated
+
+        # Pass the predawn leaf water potential into a nodel
+        # to enable the model to simulate leaf expansion with the
+        # effect of predawn leaf water potential YY
+
         [nu.update() for nu in self.nodal_units]
 
     ##########
@@ -454,9 +520,35 @@ class Plant:
             # commented for now, have to test this for seedling
             #calcMaintRespiration(weather)
 
+            #TODO logics clean up
+            if not first_leaf.appeared:
+                self.maintenance_respiration(atmos) #FIXME no side-effect
+                self.allocate_carbon()
+                self.update_seed_mass()
+            else:
+                self.calc_gas_exchange()
+                self.carbon.assimilate_to_pool()
+                self.maintenance_respiration(atmos) #FIXME no side-effect
+                self.allocate_carbon()
+                self.update_seed_mass() #FIXME with different ratio
+        elif not pheno.dead():
+            self.calc_gas_exchange()
+            self.carbon.assimilate_to_pool()
+            #self.maintenance_respiration(atmos) #FIXME no side-effect
+            self.allocate_carbon()
+            #TODO need DateTime like object
+            if atmos.time == midnight:
+                self.carbon.reset_pool()
+            else:
+                self.carbon.assimilate_to_pool()
+            #self.update_mass()
+
+
     ###########
     # Process #
     ###########
+
+    #TODO unify naming convention for processes (i.e. verb?)
 
     def calc_gas_exchange(self, atmos):
         #tau = 0.50 # atmospheric transmittance, to be implemented as a variable => done
@@ -496,7 +588,7 @@ class Plant:
              self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
 
-    def carbon_allocation(self, atmos):
+    def allocate_carbon(self, atmos):
         pass
 
     # based on McCree's paradigm, See McCree(1988), Amthor (2000), Goudriaan and van Laar (1994)

@@ -14,7 +14,6 @@ class State(Enum):
 class NodalUnit(object):
     def __init__(self, plant, rank, mass):
         self.plant = plant
-        self.pheno = plant.pheno
         self.rank = rank
         self.leaf = Leaf(self)
         self.stem = Stem(self)

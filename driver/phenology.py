@@ -2,8 +2,10 @@
 import stage
 
 class Phenology(object):
-    def __init__(self, timestep):
-        self.timestep = timestep
+    def __init__(self, plant):
+        self.plant = plant
+        #TODO make use of InitInfo object
+        self.timestep = plant.info.timestep
         self.setup()
 
     def setup(self):
@@ -19,14 +21,15 @@ class Phenology(object):
         self.tassel_initiation = ti = stage.TasselInitiation(self)
         self.silking = s = stage.Silking(self)
         self.grain_filling_initiation = gfi = stage.GrainFillingInitiation(self)
-        self.mature = m = stage.Mature(self)
-        #self.maturity = m = Maturity(self)
+        self.mature = m1 = stage.Mature(self)
+        self.maturity = m2 = stage.Maturity(self)
+        self.death = d = stage.Death(self)
 
         self.phyllochrons_from_ti = pti = stage.PhyllochronsFromTI(self)
 
         self.stages = [
             gstt, gddt, gtit,
-            g, e, li, la, ti, s, gfi, m,
+            g, e, li, la, ti, s, gfi, m1, m2, d,
             pti,
         ]
 
@@ -44,6 +47,10 @@ class Phenology(object):
 
         #FIXME remove finish() for simplicity
         [s.finish() for s in queue if s.over()]
+
+    #TODO some methods for event records? or save them in Stage objects?
+    #def record(self, ...):
+    #    pass
 
     ############
     # Accessor #
@@ -90,8 +97,8 @@ class Phenology(object):
         return self.emergence.ing()
 
     @property
-    def dying(self):
-        pass
+    def dead(self):
+        return self.death.over()
 
     @property
     def gdd_after_emergence(self):

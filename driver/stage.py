@@ -14,7 +14,7 @@ class Stage(object):
 
     #TODO use @ decorator instead?
     def tracker(self):
-        raise NotImplementedError("Need to create a list of Accumulator objects.")
+        raise NotImplementedError("Need to create a list of Tracker objects.")
 
     #TODO prevent duplicate updates
     def update(self, T):
@@ -27,6 +27,8 @@ class Stage(object):
     @property
     def rate(self):
         return self._tracker.rate
+
+    #TODO make ready, over, ing propery?
 
     def ready(self):
         return False
@@ -242,6 +244,45 @@ class Mature(Stage):
          GDD_sum = self.pheno.gdd_tracker.rate
          T_grow = self.pheno.gst_tracker.rate
          print("* Matured: rate = {}, GDDsum = {}, Growing season T = {}".format(self.rate, GDD_sum, T_grow))
+
+
+#FIXME quite confusing names: Mature vs. Maturity
+class Maturity(Stage):
+    def tracker(self):
+        #HACK no use
+        return tracker.Tracker()
+
+    def ready(self):
+        return True
+
+    def over(self):
+        # when less than 5% of total leaf area is green, physiological maturity is reached. SK
+        # see http://www.agry.purdue.edu/ext/corn/news/timeless/TopLeafDeath.html
+        area = self.pheno.plant.area
+        return area.green_leaf <= 0.05 * area.leaf
+
+    def finish(self):
+        GDD_sum = self.pheno.gdd_tracker.rate
+        active_leaf_percent = self.pheno.plant.area.active_leaf_ratio * 100
+        print("* Physiological maturity: GDDsum = {}, Growing season T = {}, green leaf: {}%".format(GDD_sum, T_grow, active_leaf_percent))
+
+
+class Death(Stage):
+    def tracker(self):
+        #HACK no use
+        return tracker.Tracker()
+
+    def ready(self):
+        return True
+
+    def over(self):
+        #HACK access pheno and plant from stage...
+        return self.pheno.plant.count.total_dropped_leaves >= self.pheno.leaves_total
+
+    def finish(self):
+        #FIXME record event?
+        GDD_sum = self.pheno.gdd_tracker.rate
+        print("* Death: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
 
 
 # Non-growth related Stage classes for tracking thermal units over entire growth period
