@@ -25,6 +25,7 @@ class Phenology(object):
         self.maturity = m2 = stage.Maturity(self)
         self.death = d = stage.Death(self)
 
+        #TODO remove PtiTracker; can be handled by LeafAppearance and TasselInitiation
         self.pti_tracker = ptit = stage.PtiTracker(self)
 
         self.stages = [
@@ -110,5 +111,15 @@ class Phenology(object):
             return 0
 
     @property
-    def phyllochrons_from_tassel_initiation(self):
-        return self.pti_tracker.rate
+    def leaves_appeared_since_tassel_initiation(self):
+        #FIXME no need to use a separate tracker
+        #return self.pti_tracker.rate
+        return self.leaves_appeared - self.tassel_initiation.appeared_leaves
+
+    @property
+    def leaves_to_appear_since_tassel_initiation(self):
+        return self.tassel_initiation.leaves_to_appear
+
+    @property
+    def leaf_appearance_fraction_since_tassel_initiation(self):
+        return self.leaves_appeared_since_tassel_initiation / self.leaves_to_appear_since_tassel_initiation
