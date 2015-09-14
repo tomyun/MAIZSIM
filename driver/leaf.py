@@ -107,7 +107,7 @@ class Leaf(Organ):
     def phase1_delay(self):
         # not used in MAIZSIM because LTAR is used to initiate leaf growth.
         # Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
-        return np.max(0, -5.16 + 1.94 * self.rank)
+        return np.fmax(0, -5.16 + 1.94 * self.rank)
 
     @property
     def potential_area(self):
@@ -124,7 +124,7 @@ class Leaf(Organ):
 
     @property
     def green_area(self):
-        return np.max(0, self.area - self.senescent_area)
+        return np.fmax(0, self.area - self.senescent_area)
 
     @property
     def elongation_age(self):
@@ -146,7 +146,7 @@ class Leaf(Organ):
         T_grow = self.pheno.growing_temperature
         T_ratio = (T_grow - T_base) / (T_peak - T_base)
         # final leaf size is adjusted by growth temperature determining cell size during elongation
-        return np.max(0, T_ratio * np.exp(1 - T_ratio))
+        return np.fmax(0, T_ratio * np.exp(1 - T_ratio))
 
 
     #TODO confirm if it really means the elongation rate
@@ -156,19 +156,19 @@ class Leaf(Organ):
         t_e = self.growth_duration
         t_m = t_e / 2
         a = (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
-        b = np.max(0, (t_e - t) / (t_e - t_m) * (t / t_m)**(t_m / (t_e - t_m)))
-        #TODO reduce np.max()?
-        return np.max(0, a * b)
+        b = np.fmax(0, (t_e - t) / (t_e - t_m) * (t / t_m)**(t_m / (t_e - t_m)))
+        #TODO reduce np.fmax()?
+        return np.fmax(0, a * b)
 
     @property
     def potential_area_increase(self):
         # time step as day fraction
         timestep = self._elongation_tracker.timestep
 
-        ##area = np.max(0, water_effect * T_effect * self.potential_area * (1 + (t_e - self.elongation_age) / (t_e - t_m)) * (self.elongation_age / t_e)**(t_e / (t_e - t_m)))
+        ##area = np.fmax(0, water_effect * T_effect * self.potential_area * (1 + (t_e - self.elongation_age) / (t_e - t_m)) * (self.elongation_age / t_e)**(t_e / (t_e - t_m)))
         #maximum_expansion_rate = T_effect * self.potential_area * (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
         # potential leaf area increase without any limitations
-        #return np.max(0, maximum_expansion_rate * np.max(0, (t_e - self.elongation_age) / (t_e - t_m) * (self.elongation_age / t_m)**(t_m / (t_e - t_m))) * timestep)
+        #return np.fmax(0, maximum_expansion_rate * np.fmax(0, (t_e - self.elongation_age) / (t_e - t_m) * (self.elongation_age / t_m)**(t_m / (t_e - t_m))) * timestep)
         return self._temperature_effect() * self.elongation_rate * timestep * self.potential_area
 
     # create a function which simulates the reducing in leaf expansion rate
@@ -219,7 +219,7 @@ class Leaf(Organ):
     @property
     def stay_green_duration(self):
         # SK 8/20/10: as in Sinclair and Horie, 1989 Crop sciences, N availability index scaled between 0 and 1 based on
-        #nitrogen_index = np.max(0, (2 / (1 + np.exp(-2.9 * (self.g_content - 0.25))) - 1))
+        #nitrogen_index = np.fmax(0, (2 / (1 + np.exp(-2.9 * (self.g_content - 0.25))) - 1))
 
         # scale for reduction in leaf lifespan and aging rate
         if self.mature:
@@ -231,7 +231,7 @@ class Leaf(Organ):
         else:
             scale = 0
         #TODO handle after aging?
-        return np.max(0, self.stay_green * self.growth_duration - self._water_stress_duration(scale))
+        return np.fmax(0, self.stay_green * self.growth_duration - self._water_stress_duration(scale))
 
     @property
     def active_age(self):
@@ -248,7 +248,7 @@ class Leaf(Organ):
             scale = 0.5
         else:
             scale = 0
-        return np.max(0, self.growth_duration - self._water_stress_duration(scale))
+        return np.fmax(0, self.growth_duration - self._water_stress_duration(scale))
 
     @property
     def senescence_age(self):

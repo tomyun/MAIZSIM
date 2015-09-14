@@ -200,7 +200,7 @@ class Carbon(PlantTrait):
 
     def reset_pool(self):
         # reset shorterm C_pool to zero at midnight, needs to be more mechanistic
-        #FIXME need np.max(0, self.pool)?
+        #FIXME need np.fmax(0, self.pool)?
         self.reserve += self.pool
         self.pool = 0
 
@@ -231,7 +231,7 @@ class Carbon(PlantTrait):
         Td = 48.6 #High temperature compensation point
 
         g1 = 1 + np.exp(b1 - b2 * T_air)
-        g2 = 1 - np.exp(-b3 * np.max(0, Td - T_air))
+        g2 = 1 - np.exp(-b3 * np.fmax(0, Td - T_air))
         return g2 / g1
 
     @property
@@ -332,8 +332,8 @@ class Carbon(PlantTrait):
         c = supply - self.maintenance_respiration
         # this is the same as (PhyllochronsSinceTI - lvsAtTI / (totalLeaves - lvsAtTI))
         return {
-            'shoot': np.max(0, Yg * fraction * c), # gCH2O partitioned to shoot
-            'root': np.max(0, Yg * (1 - fraction) * c), # gCH2O partitioned to roots
+            'shoot': np.fmax(0, Yg * fraction * c), # gCH2O partitioned to shoot
+            'root': np.fmax(0, Yg * (1 - fraction) * c), # gCH2O partitioned to roots
         }
 
     @property
@@ -399,7 +399,7 @@ class Nitrogen(PlantTrait):
         fraction = 0.79688 - 0.00023747 * tt - 0.000000086145 * tt**2
 
         # fraction of leaf n in total shoot n can't be smaller than zero. YY
-        return np.max(0, fraction)
+        return np.fmax(0, fraction)
 
     #TODO rename to `leaves`?
     @property
@@ -575,7 +575,7 @@ class Photosynthesis(PlantTrait):
         try:
             # average stomatal conductance Yang
             c = self._weighted(self.conductance_array) / self.p.area.leaf_area_index
-            return np.max(0, c)
+            return np.fmax(0, c)
         except ZeroDivisionError:
             return 0
 
