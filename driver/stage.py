@@ -126,7 +126,7 @@ class TasselInitiation(Stage):
 
     @property
     def added_leaves(self):
-        return np.min(0, self.initiated_leaves - self.juvenile_leaves)
+        return np.fmin(0, self.initiated_leaves - self.juvenile_leaves)
 
     @property
     def leaves_to_induce(self):

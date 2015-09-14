@@ -54,7 +54,7 @@ class Mass(PlantTrait):
     #TODO handle carbon supply from the seed
     @property
     def reduce_seed(self, supply):
-        supply = np.min(self._seed, supply)
+        supply = np.fmin(self._seed, supply)
         self._seed -= supply
         return supply
 
@@ -182,7 +182,7 @@ class Carbon(PlantTrait):
         if amount is None:
             amount = self.reserve
         else:
-            amount = np.min(self.reserve, amount)
+            amount = np.fmin(self.reserve, amount)
         self.reserve -= amount
         self.pool += amount
 
@@ -320,11 +320,11 @@ class Carbon(PlantTrait):
             # and then C_reserve is used to supplement whatever demand that's left
         else:
             self.reset_pool()
-            self.supply = np.min(self.reserve, maintenance_respiration)
+            self.supply = np.fmin(self.reserve, maintenance_respiration)
 
     @property
     def partition(self):
-        fraction = np.min(0.925, 0.50 + 0.50 * self._scale) # eq 3 in Grant
+        fraction = np.fmin(0.925, 0.50 + 0.50 * self._scale) # eq 3 in Grant
         #conv_factor = 1 / 1.43 # equivalent Yg, Goudriaan and van Laar (1994)
         Yg = 0.75 # synthesis efficiency, ranges between 0.7 to 0.76 for corn, see Loomis and Amthor (1999), Grant (1989), McCree (1988)
         # Yg = 0.74
@@ -362,7 +362,7 @@ class Nitrogen(PlantTrait):
             # when shoot biomass is lower than 100 g/m2, the maximum [N] allowed is 6.3%
             # shoot biomass and Nitrogen are in g
             # need to adjust demand or else there will be mass balance problems
-            pool = np.min(0.63 * shoot_mass, pool)
+            pool = np.fmin(0.63 * shoot_mass, pool)
         self._pool = pool
 
     @property

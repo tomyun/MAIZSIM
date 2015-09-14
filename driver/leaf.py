@@ -131,7 +131,7 @@ class Leaf(Organ):
         #TODO implement Parent and Tardieu (2011, 2012) approach for leaf elongation in response to T and VPD, and normalized at 20C, SK, Nov 2012
         # elongAge indicates where it is now along the elongation stage or duration.
         # duration is determined by totallengh/maxElongRate which gives the shortest duration to reach full elongation in the unit of days.
-        return np.min(self.self.growth_duration / 2, self._elongation_tracker.rate)
+        return np.fmin(self.self.growth_duration / 2, self._elongation_tracker.rate)
 
     def _temperature_effect(self):
         # T_peak is the optimal growth temperature at which the potential leaf size determined in calc_mophology achieved.
@@ -184,7 +184,7 @@ class Leaf(Organ):
         # sensitivity = 1.92, LeafWPhalf = -1.86, the sensitivity parameter may be raised by 0.3 to 0.5 to make it less sensitivy at high LWP, SK
         s_f = 0.4258 # 0.5
         psi_f = -1.4251 # -1.0
-        return np.min(1.0, (1 + np.exp(s_f * psi_f)) / (1 + np.exp(s_f * (psi_f - (psi_predawn - psi_th)))))
+        return np.fmin(1.0, (1 + np.exp(s_f * psi_f)) / (1 + np.exp(s_f * (psi_f - (psi_predawn - psi_th)))))
 
     @property
     def actual_area_increase(self):
@@ -195,7 +195,7 @@ class Leaf(Organ):
         carbon_effect = 1.0
 
         # growth temperature effect is included in determining potential area
-        return np.min(water_effect, carbon_effect) * self.potential_area_increase
+        return np.fmin(water_effect, carbon_effect) * self.potential_area_increase
 
     @property
     def relative_area_increase(self):
@@ -238,7 +238,7 @@ class Leaf(Organ):
         # Assumes physiological time for senescence is the same as that for growth though this may be adjusted by stayGreen trait
         # a peaked fn like beta fn not used here because aging should accelerate with increasing T not slowing down at very high T like growth,
         # instead a q10 fn normalized to be 1 at T_opt is used, this means above Top aging accelerates.
-        return np.min(self._aging_tracker.rate, self.stay_green_duration)
+        return np.fmin(self._aging_tracker.rate, self.stay_green_duration)
 
     @property
     def senescence_duration(self):
@@ -252,7 +252,7 @@ class Leaf(Organ):
 
     @property
     def senescence_age(self):
-        return np.min(self._senescence_tracker.rate, self.senescence_duration)
+        return np.fmin(self._senescence_tracker.rate, self.senescence_duration)
 
     @property
     #TODO confirm if it really means the senescence ratio, not rate
