@@ -1,5 +1,5 @@
 from .weight import Weight
-from tracker import GrowingDegreeDays
+from ..phenology.tracker import GrowingDegreeDays
 
 class Organ(object):
     def __init__(self):

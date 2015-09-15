@@ -1,5 +1,5 @@
 from .organ import Organ
-from tracker import Accumulator, BetaFunc, Q10Func
+from ..phenology.tracker import Accumulator, BetaFunc, Q10Func
 
 import numpy as np
 
