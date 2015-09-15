@@ -99,6 +99,22 @@ class Phenology(object):
         return self.emergence.ing()
 
     @property
+    def emerged(self):
+        return self.emergence.over()
+
+    @property
+    def vegetative_growing(self):
+        return self.germination.over() and not self.tassel_initiation.over()
+
+    @property
+    def silking(self):
+        return self.silking.ing()
+
+    @property
+    def grain_filling(self):
+        return self.grain_filling.ing()
+
+    @property
     def dead(self):
         return self.death.over()
 
