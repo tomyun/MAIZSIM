@@ -1,10 +1,10 @@
 import numpy as np
 
 class Tracker(object):
-    def __init__(self, timestep=1, *args):
+    def __init__(self, timestep=1, **kwargs):
         self.timestep = timestep
         self.reset()
-        self.setup(*args)
+        self.setup(**kwargs)
 
     def reset(self):
         self._values = []
