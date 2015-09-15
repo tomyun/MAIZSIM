@@ -4,7 +4,7 @@ from gasexchange import GasExchange
 
 import numpy as np
 
-class PlantTait:
+class PlantTrait:
     def __init__(self, plant):
         self.p = plant
         self.setup()
@@ -156,7 +156,7 @@ class Area(PlantTrait):
 
     # calculate relative area increases for leaves now that they are updated
     @property
-    def per_leaf_relative_increase(self):
+    def relative_leaf_increase(self):
         return sum([nu.leaf.relative_area_increase for nu in self.p.nodal_units])
 
 
@@ -176,7 +176,7 @@ class Carbon(PlantTrait):
         self.pool = 0
 
         self.supply = 0 # daily mobilization of carbon
-        self.demand = 0
+        #self.demand = 0 # property
 
     def translocate_to_pool(self, amount=None):
         if amount is None:
@@ -204,12 +204,21 @@ class Carbon(PlantTrait):
         self.reserve += self.pool
         self.pool = 0
 
+    def update_pool_with_root_residual(self):
+        #TODO need output from 2DSOIL
+        self.pool += self.p.soil.pcrl - self.p.soil.pcrs
+
     def allocate_with_seed(self):
-        self.reserve = self.p.mass.seed * self.p.ratio.carbon_to_mass
+        self.reserve = self.p.mass.seed * self._content
         # assume it takes 20 days to exhaust seed C reserve
         #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (initInfo.timeStep / 60))
         self.translocate_to_pool()
         #FIXME the original code did not reset pool here
+
+    @property
+    def _content(self):
+        #HACK should depend on growth stage, but fix it for now
+        return self.p.ratio.carbon_to_mass
 
     # to be used by allocate_carbon()
     @property
@@ -243,6 +252,7 @@ class Carbon(PlantTrait):
         return 1 / (hours * 60 / info.time_step)
 
     @property
+    # this is the same as (PhyllochronsSinceTI - lvsAtTI / (totalLeaves - lvsAtTI))
     def _scale(self):
         # see Grant (1989), #of phy elapsed since TI/# of phy between TI and silking
         return self.p.pheno.leaf_appearance_fraction_since_tassel_initiation
@@ -270,11 +280,28 @@ class Carbon(PlantTrait):
         q10fn = Q10 ** ((self.p.atmos.air_T - 20.0) / 10) # should be soil temperature
         return q10fn * coeff * self.p.mass.total * dt # gCH2O dt-1, agefn effect removed. 11/17/14. SK.
 
+    @property
+    def demand(self):
+        if self.p.pheno.grain_filling():
+            # here only grain and root dry matter increases root should be zero but it is small now.
+            max_kernel_no = 800 # assumed maximum kerner number per ear
+            # max kernel filling rate = 0.012g Kernel-1 day-1, Grant (1989)
+            #FIXME proper hanlding of init object
+            dt = self.p.init.time_step / (24 * 60)
+            max_kernel_fill_rate = 0.012 * dt
+            #dt added c_content
+            return max_kernel_no * max_kernel_fill_rate * self._temperature_effect * self._content
+        else:
+            return 0
+
     #TODO rethink the entire logic!!!
     def make_supply(self):
         # C_demand does not enter into equations until grain fill
         translocation_rate = self._temperature_effect * self._growth_factor
         maintenance_respiration = self.maintenance_respiration
+
+        #HACK handle residual root carbon from 2DSOIL here, not in partition()
+        self.update_pool_with_root_residual()
 
         if self.pool > self.demand:
             # CADD from Grant
@@ -322,6 +349,10 @@ class Carbon(PlantTrait):
             self.reset_pool()
             self.supply = np.fmin(self.reserve, maintenance_respiration)
 
+        #HACK handle remaining reserve here
+        # everything is carbohydrate now
+        self.reserve += self.shoot_reserve
+
     @property
     def partition(self):
         fraction = np.fmin(0.925, 0.50 + 0.50 * self._scale) # eq 3 in Grant
@@ -329,21 +360,138 @@ class Carbon(PlantTrait):
         Yg = 0.75 # synthesis efficiency, ranges between 0.7 to 0.76 for corn, see Loomis and Amthor (1999), Grant (1989), McCree (1988)
         # Yg = 0.74
 
-        c = supply - self.maintenance_respiration
-        # this is the same as (PhyllochronsSinceTI - lvsAtTI / (totalLeaves - lvsAtTI))
+        c = np.fmax(self.supply - self.maintenance_respiration, 0)
+        if self.p.pheno.grain_filling():
+            shoot = Yg * c # gCH2O partitioned to shoot
+            root = 0 # no more partitioning to root during grain fill
+        #HACK unused code
+        # elif self.p.pheno.vegetative_growing():
+            # shootPart was reduced to 0.37; rootPart was 0.43 in sourcesafe file yy
+            # SK, commenting it out. Yg needs to be multiplied here because it represents growth respiration.
+            # shoot = 0.67 * c # these are the amount of carbons allocated with no drought stress
+            # root = 0.33 * c # Yang, 6/22/2003
+        else:
+            shoot = fraction * Yg * c # gCH2O partitioned to shoot
+            root = (1 - fraction) * Yg * c # gCH2O partitioned to roots
+
+        #HACK replaced by update_pool_with_root_residual()
+        # #TODO need output from 2DSOIL
+        # diff = self.p.soil.pcrs - self.p.soil.pcrl:
+        # # if in time step t-1, the value of pcrs is higher than that of pcrl
+        # if diff > 0:
+        #     # give a half of carbon from shoot needed to meet root demand? SK
+        #     # then take the difference between the two out of the carbon allocation to shoot at time step t
+        #     shoot -= np.fmin(diff, shoot)
+        #     # and put that amount of carbon into carbon allocation to root at time step t.
+        #     root += diff
+        # else:
+        #     #HACK side effect here can't make this method @property
+        #     self.pool -= diff
+        #     # subtract out carbon sent to the root pool
+        #     root += diff
+
         return {
-            'shoot': np.fmax(0, Yg * fraction * c), # gCH2O partitioned to shoot
-            'root': np.fmax(0, Yg * (1 - fraction) * c), # gCH2O partitioned to roots
+            'shoot': shoot,
+            'root': root,
         }
 
     @property
-    def partition_shoot(self):
-        #H
-        w.
+    def shoot(self):
+        return self.partition['shoot']
 
+    @property
+    def root(self):
+        return self.partition['root']
+
+    @property
+    def partition_shoot(self):
+        shoot = self.shoot
+        if self.p.pheno.vegetative_growing():
+            return {
+                'leaf': shoot * 0.725,
+                'sheath': shoot * 0.275,
+                'stalk': 0,
+                'reserve': 0,
+                'husk': 0,
+                'cob': 0,
+                'grain': 0,
+            }
+        elif self.p.pheno.silking():
+            def ratio(a, b, s):
+                r = a if s <= self._scale else b
+                return shoot * np.fmax(r, 0)
+            s = self._scale
+            leaf = shoot * 0.725 * np.fmax(0.725 - 0.775*s, 0)
+            sheath = shoot * 0.275 * np.fmax(0.275 - 0.225*s, 0)
+            #TODO check if stalk ratio is conditioned this way, otherwise reserve_ratio should be computed here
+            stalk = ratio(1.1*s, 2.33 - 0.6*np.exp(s), 0.85)
+            husk = ratio(np.exp(-7.75 + 6.6*s), 1 - 0.675*s, 1.0)
+            cob = ratio(-8.4 + 7.0*s, 0.625, 1.125)
+            # give reserve part what is left over, right now it is too high
+            reserve = np.fmax(shoot - (leaf + sheah + stalk + husk + cob), 0)
+            # allocate shootPart into components
+            return {
+                'leaf': leaf,
+                'sheath': sheath,
+                'stalk': stalk,
+                'reserve': reserve,
+                'husk': husk,
+                'cob': cob,
+                'grain': 0,
+            }
+        #TODO: check if it should go further than grain filling until dead
+        elif self.p.pheno.grain_filling():
+            return {
+                'leaf': 0,
+                'sheath': 0,
+                'stalk': 0,
+                'reserve': 0,
+                'husk': 0,
+                'cob': 0,
+                'grain': shoot,
+            }
+
+    @property
+    def leaf(self):
+        return self.partition_shoot['leaf']
+
+    @property
+    def sheath(self):
+        return self.partition_shoot['sheath']
+
+    @property
+    def stalk(self):
+        return self.partition_shoot['stalk']
+
+    @property
+    #FIXME shouldn't be confused with long-term reserve pool
+    def shoot_reserve(self):
+        return self.partition_shoot['reserve']
+
+    @property
+    def husk(self):
+        return self.partition_shoot['husk']
+
+    @property
+    def cob(self):
+        return self.partition_shoot['cob']
+
+    @property
+    def grain(self):
+        return self.partition_shoot['grain']
+
+    @property
+    def stem(self):
+        #TODO sheath and stalk haven't been separated in this model
+        # shoot_reserve needs to be added later
+        return self.sheath + self.stalk
+
+    @property
+    def ear(self):
+        return self.grain + self.cob + self.husk
 
     def prepare_mobilization(self):
-
+        pass
 
 
 
@@ -735,4 +883,58 @@ class Plant:
         )
 
     def allocate_carbon(self, atmos):
-        supply = self.carbon.supply()
+        self.carbon.make_supply()
+
+        #FIXME just for validating total imports of carbohydrate
+        total_demand = 0
+
+        for i in range(self.pheno.leaves_initiated):
+            nu = self.nodal_units[i]
+
+            # here we can allocate leaf part among leaves
+            # need to find demand first
+            leaf = nu.leaf
+
+            #HACK setting SLA this way is not permitted in the new implementation; this was unused code anyways
+            # # Update SLA based on current shoot growth rate. Do this for every leaf
+            # # no sla adjustment until after emergence
+            # if self.carbon.shoot > 0 and self.pheno.emerging():
+            #     # see Grant, 1989, eq 9. 10000 converts from m2 to cm2
+            #     SLA_est = 1 / (25.0 + 150.0 * self.carbon.shoot) * 10000
+            #     if leaf.growing:
+            #         leaf.specific_leaf_area = np.fmin(400.0, SLA_est)
+
+            # Partition carbon to leaves relative to growth rate
+            # now need to find increment of Carbo to add to each leaf
+            # update leaf's mass
+            # first find the number of growing leaves. This is saved as a variable in the [0] nodal unit
+
+            if not leaf.dead:
+                # Adjusting C allocation based on leaf size if not aging.
+                # doing it based on current growth rate is more mechanistic but seems to have issue now. To revisit. SK
+                demand = leaf.potential_area / self.area.potential_leaf * self.carbon.leaf
+                # carbon allocated according to growth rate
+                #demand = leaf.relative_area_increase / self.area.relative_leaf_increase * self.carbon.leaf
+                total_demand += demand
+
+                leaf.import_carbohydrate(demand)
+        assert total_demand == self.carbon.leaf
+
+        #FIXME what is the difference between import_carbohydrate()?
+        #self.root.actual_carbon_increment = self.carbon.root
+        # before emergence root weight has been initialized. Just dump this carbon for now.
+        if self.pheno.emerged:
+            self.root.import_carbohydrate(self.carbon.root)
+
+        #FIXME in the original code, total stem mass was stored in the 0th nodal unit
+        #TODO partition into individual stem like we did for the leaf
+        self.nodal_units[0].stem.import_carbohydrate(self.carbon.stem)
+
+        self.ear.import_carbohydrate(self.carbon.ear)
+
+        # checking the balance if sums up to shootPart
+        #part_sum = self.carbon.stem + self.carbon.ear + self.carbon.leaf
+        #if atmos.time == 0.5:
+            #print("adding CH2O: {} to grain".format(self.carbon.grain))
+            #print("Sum of part coeff is {} and shoot CH2O is {}".format(part_sum, self.carbon.shoot))
+        #print("Carbon pool = {}".format(self.carbon.pool))
