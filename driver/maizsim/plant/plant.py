@@ -1,6 +1,6 @@
-from phenology import Phenology
-from structure import NodalUnit
-from gasexchange import GasExchange
+from ..phenology import Phenology
+from ..structure import NodalUnit
+from .gasexchange import GasExchange
 
 import numpy as np
 
