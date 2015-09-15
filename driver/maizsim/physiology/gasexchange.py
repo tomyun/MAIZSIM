@@ -12,65 +12,10 @@
 # 2006-2007 modified to use leaf water potentials to adjust photosynthesis for water stress Y. Yang
 # modified 2009 to adjust photosynthesis for nitroge stress Y. Yang
 
+from ..atmosphere import VaporPressure, Weather
+
 import numpy as np
 import scipy.optimize
-import copy
-
-class VaporPressure:
-    # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
-    a = 0.611 # kPa
-    b = 17.502 # C
-    c = 240.97 # C
-
-    #FIXME August-Roche-Magnus formula gives slightly different parameters
-    # https://en.wikipedia.org/wiki/Clausius–Clapeyron_relation
-    #a = 0.61094 # kPa
-    #b = 17.625 # C
-    #c = 243.04 # C
-
-    @classmethod
-    def saturation(cls, T):
-        a, b, c = cls.a, cls.b, cls.c
-        return a*np.exp((b*T)/(c+T))
-
-    @classmethod
-    def ambient(cls, T, RH):
-        es = cls.saturation(T)
-        return es * RH
-
-    @classmethod
-    def deficit(cls, T, RH):
-        es = cls.saturation(T)
-        return es * (1 - RH)
-
-    # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
-    @classmethod
-    def curve_slope(cls, T, P):
-        es = cls.saturation(T)
-        b, c = cls.b, cls.c
-        slope = es * (b*c)/(c+T)**2 / P
-        return slope
-
-
-class Atmosphere:
-    def __init__(self, PFD, T_air, CO2, RH, wind, P_air):
-        self.setup(PFD, T_air, CO2, RH, wind, P_air)
-
-    def setup(self, PFD, T_air, CO2, RH, wind, P_air):
-        self.PFD = PFD
-        self.CO2 = CO2 # ppm
-        self.RH = np.clip(RH, 10, 100) / 100. # %
-        self.T_air = T_air # C
-        self.wind = wind # meters s-1
-        self.P_air = P_air # kPa
-
-    def copy(self):
-        return copy.copy(self)
-
-    @property
-    def VPD(self):
-        return VaporPressure.deficit(self.T_air, self.RH)
-
 
 class Stomata:
     def __init__(self, leaf_width):
@@ -323,7 +268,7 @@ class PhotosyntheticLeaf:
         self.width = width
 
         # atmosphere
-        self.atmos = atmos
+        self.weather = weather
 
         # soil
         self.ET_supply = ET_supply
@@ -451,7 +396,7 @@ class GasExchange:
         self.leaf_n_content = leaf_n_content
 
     def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_n_content, leaf_width, LWP, ET_supply):
-        self.atmos = Atmosphere(PFD, T_air, CO2, RH, wind, P_air)
+        self.weather = Weather(PFD, T_air, CO2, RH, wind, P_air)
         self.leaf = PhotosyntheticLeaf(LWP, leaf_n_content, leaf_width, self.atmos, ET_supply)
         self.leaf.exchange()
 
