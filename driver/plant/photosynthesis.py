@@ -1,4 +1,5 @@
 from .trait import Trait
+from ..structure.weight import Weight
 
 import numpy as np
 

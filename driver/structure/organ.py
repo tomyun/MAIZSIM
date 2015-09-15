@@ -1,13 +1,5 @@
+from .weight import Weight
 from tracker import GrowingDegreeDays
-
-class Weight(object):
-    CO2 = 44.0098
-    C = 12.0107
-    CH2O = 30.031
-    H2O = 18.01528
-
-    C_to_CH2O_ratio = C / CH2O # 0.40
-
 
 class Organ(object):
     def __init__(self):
