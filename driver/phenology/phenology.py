@@ -1,5 +1,4 @@
-#from . import stage
-import stage
+from . import stage
 
 class Phenology(object):
     def __init__(self, plant):

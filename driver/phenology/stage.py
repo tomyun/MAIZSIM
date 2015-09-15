@@ -1,5 +1,5 @@
 #from .tracker import BetaFunc, GrowingDegreeDays, VegetativeGeneralThermalIndex, ReproductiveGeneralThermalIndex, LeafInductionRate
-import tracker
+from . import tracker
 
 import numpy as np
 
