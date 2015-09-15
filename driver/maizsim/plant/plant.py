@@ -75,6 +75,7 @@ class Plant:
 
         if pheno.germinating():
             #TODO temperature setting?
+            pass
         elif pheno.emerging():
             self.initiate_root()
 
