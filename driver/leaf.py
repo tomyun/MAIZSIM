@@ -112,7 +112,7 @@ class Leaf(Organ):
     @property
     def potential_area(self):
         # daughtry and hollinger (1984) Fournier and Andrieu(1998) Pg242 YY
-        maximum_area = self.potential_leaf * self.potential_width * self.area_ratio
+        maximum_area = self.potential_length * self.potential_width * self.area_ratio
 
         # Fig 4 of Birch et al. (1998)
         leaf_number_effect = np.clip(np.exp(-1.17 + 0.047 * self.pheno.leaves_total), 0.5, 1.0)
