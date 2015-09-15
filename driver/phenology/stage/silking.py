@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import BetaFunc
 
 class Silking(Stage):
     #FIXME use correct args
@@ -10,7 +10,7 @@ class Silking(Stage):
 
     def tracker(self):
         # Assume 75% Silking occurs at total tip appeared + 3 phyllochrons
-        return tracker.BetaFunc(self.R_max)
+        return BetaFunc(R_max=self.R_max)
 
     def ready(self):
         return self.pheno.tassel_initiation.over() and self.pheno.leaf_appearance.over()

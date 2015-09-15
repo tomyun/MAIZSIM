@@ -1,11 +1,11 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import Tracker
 
 #FIXME quite confusing names: Mature vs. Maturity
 class Maturity(Stage):
     def tracker(self):
         #HACK no use
-        return tracker.Tracker()
+        return Tracker()
 
     def ready(self):
         return True

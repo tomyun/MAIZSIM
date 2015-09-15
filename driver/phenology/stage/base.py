@@ -1,6 +1,3 @@
-#from ..tracker import BetaFunc, GrowingDegreeDays, VegetativeGeneralThermalIndex, ReproductiveGeneralThermalIndex, LeafInductionRate
-from .. import tracker
-
 import numpy as np
 
 class Stage(object):

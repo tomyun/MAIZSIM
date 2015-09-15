@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import GrowingDegreeDays
 
 class GrainFillingInitiation(Stage):
     # where is this number '170' from? SK
@@ -8,7 +8,7 @@ class GrainFillingInitiation(Stage):
 
     def tracker(self):
         #TODO GTI was found more accurate for grain filling stage, See Thijs phenolog paper (2014)
-        return tracker.GrowingDegreeDays()
+        return GrowingDegreeDays()
 
     def ready(self):
         return self.pheno.silking.over()

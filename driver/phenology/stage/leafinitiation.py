@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import BetaFunc
 
 class LeafInitiation(Stage):
     #FIXME use correct args
@@ -9,7 +9,7 @@ class LeafInitiation(Stage):
         self.R_max = R_max_LIR
 
     def tracker(self):
-        t = tracker.BetaFunc(self.R_max)
+        t = BetaFunc(R_max=self.R_max)
         t.set_initial_value(self.initial_leaves)
         return t
 

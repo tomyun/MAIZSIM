@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import LeafInductionRate
 
 class TasselInitiation(Stage):
     #FIXME use correct args
@@ -9,7 +9,11 @@ class TasselInitiation(Stage):
         self._appeared_leaves = None
 
     def tracker(self):
-        return tracker.LeafInductionRate(self.pheno.gst_tracker, self.juvenile_leaves, self.day_length)
+        return LeafInductionRate(
+            gst_tracker=self.pheno.gst_tracker,
+            juvenile_leaves=self.juvenile_leaves,
+            day_length=self.day_length
+        )
 
     @property
     def initiated_leaves(self):

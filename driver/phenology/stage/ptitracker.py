@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import BetaFunc
 
 #FIXME better naming... isn't it a duplicate of Silking?
 # to be used for C partitoining time scaling, see Plant.cpp
@@ -9,7 +9,7 @@ class PtiTracker(Stage):
         self.R_max = R_max_LTAR
 
     def tracker(self):
-        return tracker.BetaFunc(self.R_max)
+        return BetaFunc(R_max=self.R_max)
 
     def ready(self):
         return self.pheno.tassel_initiation.over()

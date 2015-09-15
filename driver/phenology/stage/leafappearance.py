@@ -1,5 +1,5 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import BetaFunc
 
 class LeafAppearance(Stage):
     #FIXME use correct args
@@ -8,7 +8,7 @@ class LeafAppearance(Stage):
         self.leaves = 0
 
     def tracker(self):
-        return tracker.BetaFunc(self.R_max)
+        return BetaFunc(R_max=self.R_max)
 
     def post_update(self):
         self.leaves = int(self.rate)

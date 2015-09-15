@@ -1,12 +1,12 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import GrowingDegreeDays
 
 class Mature(Stage):
     def setup(self, GDD_rating=1331):
         self.GDD_rating = GDD_rating
 
     def tracker(self):
-        return tracker.GrowingDegreeDays()
+        return GrowingDegreeDays()
 
     def ready(self):
         return self.pheno.emergence.over()

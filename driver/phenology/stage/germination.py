@@ -1,12 +1,12 @@
 from .base import Stage
-from .. import tracker
+from ..tracker import BetaFunc
 
 class Germination(Stage):
     def setup(self, R_max=0.45):
         self.R_max = R_max
 
     def tracker(self):
-        return tracker.BetaFunc(self.R_max)
+        return BetaFunc(R_max=self.R_max)
 
     def ready(self):
         #TODO implement germination rate model of temperature
