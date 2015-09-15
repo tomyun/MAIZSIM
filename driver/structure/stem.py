@@ -1,4 +1,4 @@
-from organ import Organ
+from .organ import Organ
 
 class Stem(Organ):
     def __init__(self, nodal_unit):

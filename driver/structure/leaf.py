@@ -1,4 +1,4 @@
-from organ import Organ
+from .organ import Organ
 from tracker import Accumulator, BetaFunc, Q10Func
 
 import numpy as np
