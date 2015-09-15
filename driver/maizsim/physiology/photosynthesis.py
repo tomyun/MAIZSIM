@@ -1,5 +1,5 @@
 from .trait import Trait
-from ..structure.weight import Weight
+from ..morphology.weight import Weight
 
 import numpy as np
 
