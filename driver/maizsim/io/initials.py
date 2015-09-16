@@ -1,19 +1,12 @@
-import datetime
+from .base import LegacyFile, date
 
-class InitInfo:
-    def load(self, filename):
-        def skip():
-            f.readline()
-        def parse(spec):
-            l = f.readline().split()
-            [setattr(self, n, c(v)) for (n, c), v in zip(spec, l)]
-        def date(v):
-            return int(datetime.datetime.strptime(v, "'%m/%d/%Y'").strftime('%j'))
-
-        with open(filename) as f:
-            skip()
-            skip()
-            parse([
+class Initials(LegacyFile):
+    @property
+    def specs(self):
+        return [
+            [],
+            [],
+            [
                 # PopRow: plant population per meter of row (m-1)
                 ('population_per_row', float),
 
@@ -42,9 +35,9 @@ class InitInfo:
 
                 # Co2?
                 #('co2', float),
-            ])
-            skip()
-            parse([
+            ],
+            [],
+            [
                 # LATUDE: latitude (degrees)
                 ('latitude', float),
 
@@ -53,32 +46,36 @@ class InitInfo:
 
                 # Altitude: altitude (m)
                 ('altitude', float),
-            ])
-            skip()
-            parse([
+            ],
+            [],
+            [
                 # AutoIrrigate(F?)
                 ('auto_irrigating', int),
-            ])
-            skip()
-            parse([
+            ],
+            [],
+            [
                 # beginDay: simulation begin date (jday)
                 ('begin_day', date),
 
                 # sowingDay: sowing date (jday)
                 ('sowing_day', date),
 
+                # emergenceDay: sowing date (jday) -- old format?
+                #('emergence_day', date),
+
                 # endDay: simulation end date (jday)
                 ('end_day', date),
 
                 # TimeStep: timestep (min)
                 ('timestep', int),
-            ])
-            skip()
-            skip()
-            parse([
+            ],
+            [],
+            [],
+            [
                 # OutputSoilNo (0/1)
                 ('output_soil_no', int),
 
                 # OutputSoilYes (0/1)
                 ('output_soil_yes', int),
-            ])
+            ]
+        ]
