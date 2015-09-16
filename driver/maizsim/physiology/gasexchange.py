@@ -288,7 +288,7 @@ class PhotosyntheticLeaf:
             scatt = 0.15 # leaf reflectance + transmittance
             f = 0.15 # spectral correction
 
-            Ia = self.atmos.PFD * (1 - scatt) # absorbed irradiance
+            Ia = self.weather.PFD * (1 - scatt) # absorbed irradiance
             I2 = Ia * (1 - f) / 2. # useful light absorbed by PSII
             return I2
 
@@ -299,8 +299,8 @@ class PhotosyntheticLeaf:
         def co2_mesophyll(A_net):
             update_stomata(A_net)
 
-            P = self.atmos.P_air / 100.
-            Ca = self.atmos.CO2 * P # conversion to partial pressure
+            P = self.weather.P_air / 100.
+            Ca = self.weather.CO2 * P # conversion to partial pressure
             Cm = Ca - A_net * self.stomata.total_resistance_co2() * P
             return np.clip(Cm, 0., 2*Ca)
 
@@ -338,11 +338,11 @@ class PhotosyntheticLeaf:
         epsilon = 0.97
         sbc = 5.6697e-8
 
-        T_air = self.atmos.T_air
+        T_air = self.weather.T_air
         Tk = T_air + 273.
-        RH = self.atmos.RH
-        PFD = self.atmos.PFD
-        P_air = self.atmos.P_air
+        RH = self.weather.RH
+        PFD = self.weather.PFD
+        P_air = self.weather.P_air
         Jw = self.ET_supply
 
         gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
@@ -376,7 +376,7 @@ class PhotosyntheticLeaf:
             T_leaf1 = self.update_temperature()
             return (T_leaf0 - T_leaf1)**2
 
-        res = scipy.optimize.minimize(cost, [self.atmos.T_air], options={'disp': True})
+        res = scipy.optimize.minimize(cost, [self.weather.T_air], options={'disp': True})
         self.temperature = res.x[0]
 
         #HACK ensure leaf state matches with the final temperature
@@ -385,9 +385,9 @@ class PhotosyntheticLeaf:
     @property
     def ET(self):
         gv = self.stomata.total_conductance_h20()
-        ea = VaporPressure.ambient(self.atmos.T_air, self.atmos.RH)
+        ea = VaporPressure.ambient(self.weather.T_air, self.weather.RH)
         es_leaf = VaporPressure.saturation(self.temperature)
-        ET = gv * ((es_leaf - ea) / self.atmos.P_air) / (1 - (es_leaf + ea) / self.atmos.P_air)
+        ET = gv * ((es_leaf - ea) / self.weather.P_air) / (1 - (es_leaf + ea) / self.weather.P_air)
         return max(0., ET) # 04/27/2011 dt took out the 1000 everything is moles now
 
 
@@ -418,7 +418,7 @@ class GasExchange:
 
     @property
     def VPD(self):
-        return VaporPressure.deficit(self.atmos.T_air, self.atmo.RH)
+        return VaporPressure.deficit(self.weather.T_air, self.atmo.RH)
 
     @property
     def gs(self):
