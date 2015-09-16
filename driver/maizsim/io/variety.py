@@ -12,8 +12,10 @@ class Variety(LegacyFile):
                 ('gdd_rating', float),
                 ('generic_leaf_number', int),
                 ('day_length_sensitivity', int),
-                ('Rmax_LTAR', float),
-                ('Rmax_LTIR', float),
+                ('maximum_leaf_tip_appearance_rate', float), # Rmax_LTAR
+                ('maximum_leaf_initiation_rate', float), # Rmax_LIR
                 ('phyllochrons_to_silk', float),
             ]
         ]
+
+        #TODO: support additional sections (2DSOIL exclusive): [SoilRoot], [SoilNitrogen]
