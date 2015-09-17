@@ -19,3 +19,15 @@ class Variety(LegacyFile):
         ]
 
         #TODO: support additional sections (2DSOIL exclusive): [SoilRoot], [SoilNitrogen]
+
+    def __str__(self):
+        return """\
+Description: {description}
+Cultivar: {cultivar}
+GDD rating: {gdd_rating}
+Generic leaf number: {generic_leaf_number}
+Day length snsitivity: {day_length_sensitivity}
+Maximum leaf tip appearance rate (Rmax_LTAR): {maximum_leaf_tip_appearance_rate}
+Maximum leaf initiation rate (Rmax_LIR): {maximum_leaf_initiation_rate}
+Phyllochrons to silk: {phyllochrons_to_silk}
+""".format(**self.__dict__)
