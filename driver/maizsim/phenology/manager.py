@@ -115,7 +115,7 @@ class Phenology(object):
 
     @property
     def grain_filling(self):
-        return self.grain_filling.ing()
+        return self.grain_filling_initiation.over()
 
     @property
     def dead(self):
