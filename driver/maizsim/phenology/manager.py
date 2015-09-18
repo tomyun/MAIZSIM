@@ -94,6 +94,10 @@ class Phenology(object):
         return self.germination.ing()
 
     @property
+    def germinated(self):
+        return self.germination.over()
+
+    @property
     def emerging(self):
         return self.emergence.ing()
 
