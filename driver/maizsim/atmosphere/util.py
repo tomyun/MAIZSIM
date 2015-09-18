@@ -27,6 +27,11 @@ class VaporPressure:
         es = cls.saturation(T)
         return es * (1 - RH)
 
+    @classmethod
+    def relative_humidity(cls, T, VPD):
+        es = cls.saturation(T)
+        return 1 - VPD / es
+
     # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
     @classmethod
     def curve_slope(cls, T, P):
