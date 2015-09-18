@@ -17,8 +17,13 @@ class Nitrogen(Trait):
             # when shoot biomass is lower than 100 g/m2, the maximum [N] allowed is 6.3%
             # shoot biomass and Nitrogen are in g
             # need to adjust demand or else there will be mass balance problems
-            pool = np.fmin(0.63 * shoot_mass, pool)
+            pool = np.fmin(0.063 * shoot_mass, self.initial_pool)
         self._pool = pool
+
+    @property
+    def initial_pool(self):
+        # assume nitrogen concentration at the beginning is 3.4% of the total weight of the seed
+        return 0.034 * self.p.mass.seed # 0.275
 
     @property
     def pool(self):
