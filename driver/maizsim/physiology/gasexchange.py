@@ -393,7 +393,7 @@ class PhotosyntheticLeaf:
 
 class GasExchange:
     def __init__(self, s_type):
-        self.leaf_n_content = leaf_n_content
+        self.s_type = s_type
 
     def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_n_content, leaf_width, LWP, ET_supply):
         self.weather = Weather(PFD, T_air, CO2, RH, wind, P_air)
