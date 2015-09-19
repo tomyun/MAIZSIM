@@ -48,11 +48,11 @@ class Controller:
         # Always hourly for now - have to add code to average values
         if self.time.daiy_output == 1 and weather.time.hour == 6:
             self.update_crop_output(weather)
-            if self.plant.phenology.germinated:
+            if self.plant.pheno.germinated:
                 self.update_leaf_output()
         elif self.time.hourly_output == 1:
             self.update_crop_output(weather)
-            if self.plant.phenology.germinated:
+            if self.plant.pheno.germinated:
                 self.update_leaf_output()
 
         # update timer step forward
@@ -107,7 +107,7 @@ class Controller:
             weather.time,
             Timer.julian_day_from_datetime(weather.time),
             weather.time.hour,
-            self.plant.phenology.leaves_appeared,
+            self.plant.pheno.leaves_appeared,
             self.plant.count.total_dropped_leaves,
             self.plant.area.green_leaf,
             self.plant.area.senescent_leaf,
@@ -119,13 +119,13 @@ class Controller:
             weather.sol_rad,
             soil.T_soil,
             weather.T_air,
-            self.plant.phenology.temperature,
+            self.plant.pheno.temperature,
             None, # self.plant.water.get_ET_old()
             self.plant.water.supply, # in both cases transpiration is grams per plant per hour
             self.plant.photosynthesis.net, # g Carbo per plant per hour
             self.plant.photosynthesis.gross,
             self.plant.carbon.maintenance_respiration, #dt 03/2011 added to better calc mass balance
-            self.plant.photosynthesis.conductance if self.plant.phenology.emerged else 0, # return average stomatal conductance Yang 10/31/06
+            self.plant.photosynthesis.conductance if self.plant.pheno.emerged else 0, # return average stomatal conductance Yang 10/31/06
             self.plant.photosynthesis.vapor_pressure_deficit,
             self.plant.nitrogen.pool,
             None, # self.plant.nitrogen.CumulativeNitrogenDemand()
@@ -143,9 +143,9 @@ class Controller:
             soil.max_root_depth,
             soil.water,
             self.plant.carbon.reserve,
-            self.plant.phenology.current_stage,
+            self.plant.pheno.current_stage,
             #weather.day_length, #FIXME no column defined
-            #self.plant.phenology.gdd_after_emergence,
+            #self.plant.pheno.gdd_after_emergence,
         ]
 
     def export_crop_output(self):
@@ -178,8 +178,8 @@ class Controller:
                 weather.time,
                 Timer.julian_day_from_datetime(weather.time),
                 weather.time.hour,
-                self.plant.phenology.leaves_initiated,
-                self.plant.phenology.leaves_appeared,
+                self.plant.pheno.leaves_initiated,
+                self.plant.pheno.leaves_appeared,
                 leaf.rank,
                 leaf.green_area,
                 leaf.mass,
@@ -190,7 +190,7 @@ class Controller:
                 leaf.specific_leaf_area,
                 leaf.dropped,
                 leaf.growing,
-                self.plant.phenology.gdd_after_emergence,
+                self.plant.pheno.gdd_after_emergence,
             ]
         for nu in self.plant.nodal_units:
             self.leaf_output.loc[len(self.leaf_output)] = row(nu.leaf)

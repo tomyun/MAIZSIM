@@ -85,10 +85,10 @@ class Driver:
             #self._run_controller(w, self.predawn_lwp)
             self._run_controller()
 
-            if not self.plant.phenology.germinated:
+            if not self.plant.pheno.germinated:
                 self._handle_not_germinated(w)
 
-            if self.plant.phenology.emerged:
+            if self.plant.pheno.emerged:
                 self._handle_emerged(w, S)
 
             self._handle_dead_or_not(M, T)
@@ -379,7 +379,7 @@ class Driver:
         else:
             S.pcrl = root * 24*self.pop_slab
 
-        if self.plant.phenology.grain_filling:
+        if self.plant.pheno.grain_filling:
             S.pcrq = (root + 0.75*shoot) * 24*self.pop_slab
         else:
             S.pcrq = (root + shoot) * 24*self.pop_slab
@@ -492,7 +492,7 @@ class Driver:
         #S.cumulativendemanderror = self.cumulative_nitrogen_demand_error
 
     def _handle_dead_or_not(self, M, T):
-        if self.plant.phenology.dead:
+        if self.plant.pheno.dead:
             print("Completing crop simulation...")
 
             # tell 2dsoil that crops harvested
