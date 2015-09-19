@@ -7,8 +7,8 @@ import numpy as np
 #TODO rename to CarbonAssimilation or so? could be consistently named as CarbonPartition, CarbonAllocation...
 class Photosynthesis(Trait):
     def setup(self):
-        self.sunlit_leaf = GasExchange('Sunlit')
-        self.shaded_leaf = GasExchange('Shaded')
+        self.sunlit = GasExchange('Sunlit')
+        self.shaded = GasExchange('Shaded')
 
     @property
     def sunlit_leaf_area_index(self):
