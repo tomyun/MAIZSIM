@@ -1,4 +1,5 @@
 from .trait import Trait
+from .gasexchange import GasExchange
 from ..morphology.weight import Weight
 
 import numpy as np

@@ -1,6 +1,5 @@
 from ..phenology import Phenology
 from ..morphology import NodalUnit
-from .gasexchange import GasExchange
 from ..timer import Timer
 
 import numpy as np
