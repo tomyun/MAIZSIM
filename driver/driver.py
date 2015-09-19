@@ -15,15 +15,15 @@ M = soil.module_public
 F = soil.datafilenames
 
 from maizsim.io import config
-from maizsim.atmosphere import Weather
-from maizsim.rhizosphere import Soil
+from maizsim.controller import Controller
 
 class Driver:
     def __init__(self, runfile='test.dat'):
-        soil.datafilenames.runfile[:] = runfile
-        self.setup()
+        #FIXME [:] no longer works with Python 3?
+        soil.datafilenames.runfile[:len(runfile)] = runfile
+        self.setup(runfile)
 
-    def setup(self):
+    def setup(self, runfile):
         self.load_config(runfile)
 
     #TODO implement more consolidated management
