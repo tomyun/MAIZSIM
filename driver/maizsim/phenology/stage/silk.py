@@ -1,7 +1,7 @@
 from .base import Stage
 from ..tracker import BetaFunc
 
-class Silking(Stage):
+class Silk(Stage):
     #FIXME use correct args
     #TODO check the correct phyllochrons: is it 8 or 3?
     def setup(self, R_max_LTAR=0.53, phyllochrons=8):

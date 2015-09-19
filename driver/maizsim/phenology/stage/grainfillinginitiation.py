@@ -11,7 +11,7 @@ class GrainFillingInitiation(Stage):
         return GrowingDegreeDays()
 
     def ready(self):
-        return self.pheno.silking.over()
+        return self.pheno.silk.over()
 
     def over(self):
         return self.rate >= self.GDD_grain

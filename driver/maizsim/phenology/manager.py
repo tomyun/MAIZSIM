@@ -17,7 +17,7 @@ class Phenology(object):
         self.leaf_initiation = li = stage.LeafInitiation(self)
         self.leaf_appearance = la = stage.LeafAppearance(self)
         self.tassel_initiation = ti = stage.TasselInitiation(self)
-        self.silking = s = stage.Silking(self)
+        self.silk = s = stage.Silk(self)
         self.grain_filling_initiation = gfi = stage.GrainFillingInitiation(self)
         self.mature = m1 = stage.Mature(self)
         self.maturity = m2 = stage.Maturity(self)
@@ -112,11 +112,11 @@ class Phenology(object):
 
     @property
     def silking(self):
-        return self.silking.ing()
+        return self.silk.ing()
 
     @property
     def silked(self):
-        return self.silking.over()
+        return self.silk.over()
 
     @property
     def grain_filling(self):
