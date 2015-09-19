@@ -1,5 +1,5 @@
 from ..phenology import Phenology
-from ..morphology import NodalUnit
+from ..morphology import Ear, Root, NodalUnit
 from .mass import Mass
 from .area import Area
 from .count import Count
@@ -40,8 +40,8 @@ class Plant:
         self.photosynthesis = Photosynthesis(self)
 
     def setup_structure(self):
-        self.root = None
-        self.ear = None
+        self.ear = Ear(self)
+        self.root = Root(self)
         self.nodal_units = []
 
     def initiate_primordia(self):
@@ -58,7 +58,6 @@ class Plant:
         # This is so there is no discontinuity in root mass (relative to the carbon supplied by the plant later)
         # these are roots taht grew from the seed
 
-        self.root = Root()
         #TODO use weather.TotalRootWeight from 2DSOIL
         self.root.import_carbohydrate(soil.total_root_weight)
 
