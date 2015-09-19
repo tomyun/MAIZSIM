@@ -47,12 +47,12 @@ class Controller:
 
         #dt added ability to output daily based on 2dsoil output
         # Always hourly for now - have to add code to average values
-        if self.time.daiy_output == 1 and weather.time.hour == 6:
-            self.update_crop_output(weather)
+        if self.time.daily_output == 1 and weather.time.hour == 6:
+            self.update_crop_output(weather, soil)
             if self.plant.pheno.germinated:
                 self.update_leaf_output()
         elif self.time.hourly_output == 1:
-            self.update_crop_output(weather)
+            self.update_crop_output(weather, soil)
             if self.plant.pheno.germinated:
                 self.update_leaf_output()
 
