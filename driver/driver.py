@@ -16,6 +16,8 @@ F = soil.datafilenames
 
 from maizsim.io import config
 from maizsim.controller import Controller
+from maizsim.atmosphere import Weather
+from maizsim.rhizosphere import Soil
 
 class Driver:
     def __init__(self, runfile='test.dat'):
@@ -80,7 +82,8 @@ class Driver:
             #FIXME only remaining is ET_supply update
             self._update_plant_evapotranspiration(S)
 
-            self._run_controller(w, self.predawn_lwp)
+            #self._run_controller(w, self.predawn_lwp)
+            self._run_controller()
 
             if not self.plant.phenology.germinated:
                 self._handle_not_germinated(w)
@@ -334,13 +337,16 @@ class Driver:
     ##############
 
     # The model code to simulate growth ect begins here when the plant object is called.
-    def _run_controller(self, w, lwp):
+    def _run_controller(self):
         #TODO add some error catching code here
-        ier = self.controller.getErrStatus()
-        if ier != 0:
-            raise Exception("controller is in error: " + ier)
+        # ier = self.controller.getErrStatus()
+        # if ier != 0:
+        #     raise Exception("controller is in error: " + ier)
 
-        self.controller.run(w, lwp)
+        self.controller.run(
+            Weather.from_2DSOIL(T, W),
+            Soil.from_2DSOIL(T, W, S, N, G),
+        )
         # Pass both weather and leaf water potential into the "run" function
         # of the controller pSC YY
         # need to get rid of other run module (with only wthr) done?

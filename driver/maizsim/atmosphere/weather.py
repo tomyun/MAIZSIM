@@ -1,6 +1,7 @@
 from .util import VaporPressure
 from ..timer import Timer
 
+import numpy as np
 import copy
 
 #TODO to be predicted using altitude
@@ -24,15 +25,16 @@ class Weather:
     def from_2DSOIL(cls, T, W):
         #w.jday = W.jday.item()
         #w.time = T.time - W.jday
-        self.time = Timer.datetime_from_julian_day(T.time)
+        time = Timer.datetime_from_julian_day(T.time)
         i = T.itime - 1
-        self.setup(
+        T_air = W.tair[i].item()
+        return Weather(
             time=time,
             PFD=W.par[i]*4.6, # conversion from PAR in Wm-2 to umol s-1 m-2
-            #solRad=W.wattsm[i].item(), # conversion from Wm-2 to J m-2 in one hour Total Radiation incident at soil surface
-            T_air=W.tair[i].item(),
+            #sol_rad=W.wattsm[i].item(), # conversion from Wm-2 to J m-2 in one hour Total Radiation incident at soil surface
+            T_air=T_air,
             CO2=W.co2.item(),
-            RH=np.clip(VaporPressure.relative_humidity(W.vpd[i]), 0.1, 1.0), # % to 0~1
+            RH=np.clip(VaporPressure.relative_humidity(T_air, W.vpd[i]), 0.1, 1.0), # % to 0~1
             wind=W.wind*(1000/3600), # conversion from km hr-1 to m s-1
             #rain=W.rint[i].item(), #TODO take account precipitation
             day_length=W.daylng.item(),
