@@ -16,7 +16,7 @@ class Soil:
         self.max_root_depth = None
         self.water = None # ThetaAvail (cm?)
 
-    @class_method
+    @classmethod
     def from_2DSOIL(cls, T, W, S, N, G):
         self.time = Timer.datetime_from_julian_day(T.time)
         self.update_water_potential(S)

@@ -20,7 +20,7 @@ class Weather:
         self.P_air = P_air # kPa
         self.day_length = day_length
 
-    @class_method
+    @classmethod
     def from_2DSOIL(cls, T, W):
         #w.jday = W.jday.item()
         #w.time = T.time - W.jday
