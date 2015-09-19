@@ -1,6 +1,6 @@
 from .trait import Trait
 
-class Count(Traint):
+class Count(Trait):
     @property
     def total_growing_leaves(self):
         return sum([nu.leaf.growing for nu in self.p.nodal_units])
