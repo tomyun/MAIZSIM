@@ -12,7 +12,7 @@ class TasselInitiation(Stage):
         return LeafInductionRate(
             gst_tracker=self.pheno.gst_tracker,
             juvenile_leaves=self.juvenile_leaves,
-            day_length=self.day_length
+            pheno=self.pheno #FIXME to access weather.day_length
         )
 
     @property

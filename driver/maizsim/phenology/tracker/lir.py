@@ -4,11 +4,11 @@ import numpy as np
 
 # note it's Tracker, not Accumulator
 class LeafInductionRate(Tracker):
-    def setup(self, gst_tracker, juvenile_leaves, day_length=None):
+    def setup(self, gst_tracker, juvenile_leaves, pheno):
         self.gst_tracker = gst_tracker
         self.temperature_tracker = Tracker()
         self.juvenile_leaves = juvenile_leaves
-        self.day_length = self.pheno.plant.weather.day_length
+        self.pheno = pheno
 
     def calc(self, T):
         #TODO implement on_first_update() interface?
@@ -26,10 +26,11 @@ class LeafInductionRate(Tracker):
 
         by_temperature = max(0., 13.6 - 1.89*T + 0.081*T**2 - 0.001*T**3)
 
-        if self.day_length is None:
+        day_length = self.pheno.plant.weather.day_length
+        if day_length is None:
             by_photo_period = 0.
         else:
-            by_photo_period = max(0., 0.1 * (self.juvenile_leaves - 10) * (self.day_length - 12.5))
+            by_photo_period = max(0., 0.1 * (self.juvenile_leaves - 10) * (day_length - 12.5))
 
         return by_temperature + by_photo_period
 
