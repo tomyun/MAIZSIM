@@ -2,6 +2,7 @@ from .organ import Organ
 
 class Stem(Organ):
     def __init__(self, nodal_unit):
+        super().__init__(nodal_unit.plant)
         self.nodal_unit = nodal_unit
 
     def setup(self):
@@ -10,4 +11,4 @@ class Stem(Organ):
         self.diameter = 0
 
     def update(self):
-        super().update(self.pheno.temperature)
+        super().update()

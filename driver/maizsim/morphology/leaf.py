@@ -5,13 +5,12 @@ import numpy as np
 
 class Leaf(Organ):
     def __init__(self, nodal_unit):
+        super().__init__(nodal_unit.plant)
         self.nodal_unit = nodal_unit
-        self.plant = nodal_unit.plant
-        self.pheno = plant.pheno
         self._elongation_tracker = BetaFunc(timestep=1/24/60, R_max=1.0)
         self._area_tracker = Accumulator(timestep=1/24/60)
-        self._aging_tracker = Q10Func(timestep=1/24/60, T_opt=self.pheno.optimal_temperature)
-        self._senescence_tracker = Q10Func(timestep=1/24/60, T_opt=self.pheno.optimal_temperature)
+        self._aging_tracker = Q10Func(timestep=1/24/60, T_opt=self.p.pheno.optimal_temperature)
+        self._senescence_tracker = Q10Func(timestep=1/24/60, T_opt=self.p.pheno.optimal_temperature)
 
     def setup(self):
         self.rank = self.nodal_unit.rank
@@ -328,7 +327,7 @@ class Leaf(Organ):
 
     #FIXME signature mismatch with Organ: T vs predawn_lwp
     def update(self):
-        super().update(self.pheno.temperature)
+        super().update()
         self.expand()
         self.senescence()
 

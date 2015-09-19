@@ -2,7 +2,8 @@ from .weight import Weight
 from ..phenology.tracker import GrowingDegreeDays
 
 class Organ(object):
-    def __init__(self):
+    def __init__(self, plant):
+        self.p = plant
         self._tracker = GrowingDegreeDays(timestep=1/24/60, T_base=8.0, T_opt=None, T_max=43.3)
 
         # organ temperature, C
@@ -69,7 +70,7 @@ class Organ(object):
         self._tracker.update(T)
 
     def update(self):
-        raise NotImplementedError("Requires update method.")
+        self._update(self.p.pheno.temperature)
 
     def import_carbohydrate(self, amount):
         self.carbohydrate += amount
