@@ -391,9 +391,12 @@ class PhotosyntheticLeaf:
         return max(0., ET) # 04/27/2011 dt took out the 1000 everything is moles now
 
 
+#FIXME initialize weather and leaf more nicely, handling None case for properties
 class GasExchange:
     def __init__(self, s_type):
         self.s_type = s_type
+        self.weather = None
+        self.leaf = None
 
     def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_n_content, leaf_width, LWP, ET_supply):
         self.weather = Weather(PFD, T_air, CO2, RH, wind, P_air)
@@ -402,24 +405,24 @@ class GasExchange:
 
     @property
     def A_gross(self):
-        return self.leaf.A_gross
+        return self.leaf.A_gross if self.leaf else None
 
     @property
     def A_net(self):
-        return self.leaf.A_net
+        return self.leaf.A_net if self.leaf else None
 
     @property
     def ET(self):
-        return self.leaf.ET
+        return self.leaf.ET if self.leaf else None
 
     @property
     def T_leaf(self):
-        return self.leaf.temperature
+        return self.leaf.temperature if self.leaf else None
 
     @property
     def VPD(self):
-        return VaporPressure.deficit(self.weather.T_air, self.atmo.RH)
+        return VaporPressure.deficit(self.weather.T_air, self.weather.RH) if self.weather else None
 
     @property
     def gs(self):
-        return self.leaf.stomata.gs
+        return self.leaf.stomata.gs if self.leaf else None
