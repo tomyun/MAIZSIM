@@ -117,7 +117,7 @@ class Controller:
             None, # self.plant.carbon_ratio,
             soil.WP_leaf, # print out leaf water potential Yang 8/22/06
             weather.PFD,
-            weather.sol_rad,
+            None, # weather.sol_rad,
             soil.T_soil,
             weather.T_air,
             self.plant.pheno.temperature,
