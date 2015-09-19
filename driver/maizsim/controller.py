@@ -16,7 +16,7 @@ class Controller:
         self.show_variety()
         # Timer class gets stepsize in hours
         self.timer = Timer.from_julian_day(self.initials.begin_day, self.initials.timestep / 60)
-        #TODO load up atmos.Weather here?
+        #TODO load up atmosphere.Weather here?
         #dt modified this after modifying code to use julian day
         #self.weather =
         self.plant = Plant(self.initials, self.variety)
@@ -34,7 +34,7 @@ class Controller:
     def show_variety(self):
         print(self.variety)
 
-        sowing_day = Timer.datetime_from_julian_day(initinfo.sowing_day)
+        sowing_day = Timer.datetime_from_julian_day(self.initials.sowing_day)
         print("Sowing day: {}".format(sowing_day))
 
     def run(self, weather, soil):

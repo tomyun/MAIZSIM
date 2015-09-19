@@ -18,14 +18,18 @@ class Timer:
         return cls.from_datetime(time, step)
 
     @staticmethod
-    def datetime_from_julian_day(jday):
-        d = jday + (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
+    def datetime_from_julian_day(jday, jhour=0):
+        d = (jday + jhour) + (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
         return datetime.datetime.utcfromtimestamp(d * (24 * 60 * 60))
 
     @staticmethod
-    def julian_day_from_datetime(time):
+    def julian_day_from_datetime(time, hourly=False):
         j = time.timestamp() / (24 * 60 * 60) - (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
-        return round(j)
+        return j if hourly else round(j)
+
+    @staticmethod
+    def julian_hour_from_datetime(time):
+        return Timer.julian_day_from_datetime(time, hourly=True) - Timer.julian_day_from_datetime(time, hourly=False)
 
     def tick(self):
         self.time += datetime.timedelta(hours=self.step)

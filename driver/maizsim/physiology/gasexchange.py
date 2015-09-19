@@ -35,12 +35,12 @@ class Stomata:
         #FIXME initial value never used
         #self.leafp_effect = 1 # At first assume there is not drought stress, so assign 1 to leafpEffect. Yang 8/20/06
 
-    def update(self, atmos, LWP, A_net=0., T_leaf=None):
+    def update(self, weather, LWP, A_net=0., T_leaf=None):
         if T_leaf is None:
-            T_leaf = atmos.T_air
+            T_leaf = weather.T_air
 
-        self.update_boundary_layer(atmos.wind)
-        self.update_stomata(LWP, atmos.CO2, A_net, atmos.RH, T_leaf)
+        self.update_boundary_layer(weather.wind)
+        self.update_stomata(LWP, weather.CO2, A_net, weather.RH, T_leaf)
 
     def update_boundary_layer(self, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
@@ -259,7 +259,7 @@ class PhotosyntheticLeaf:
     #TODO organize leaf properties like water (LWP), nitrogen content?
     #TODO introduce a leaf geomtery class for leaf_width
     #TODO introduce a soil class for ET_supply
-    def __init__(self, water, nitrogen, width, atmos, ET_supply):
+    def __init__(self, water, nitrogen, width, weather, ET_supply):
         # static properties
         self.water = water
         self.nitrogen = nitrogen
@@ -267,7 +267,7 @@ class PhotosyntheticLeaf:
         # geometry
         self.width = width
 
-        # atmosphere
+        # weather
         self.weather = weather
 
         # soil
@@ -277,7 +277,7 @@ class PhotosyntheticLeaf:
         self.temperature = None
 
         self.stomata = Stomata(width)
-        self.stomata.update(atmos, water, A_net=0.)
+        self.stomata.update(weather, water, A_net=0.)
 
         self.photosynthesis = Photosynthesis(nitrogen)
 
@@ -293,7 +293,7 @@ class PhotosyntheticLeaf:
             return I2
 
         def update_stomata(A_net):
-            self.stomata.update(self.atmos, self.water, A_net, T_leaf)
+            self.stomata.update(self.weather, self.water, A_net, T_leaf)
 
         # mesophyll CO2 partial pressure, ubar, one may use the same value as Ci assuming infinite mesohpyle conductance
         def co2_mesophyll(A_net):
@@ -397,7 +397,7 @@ class GasExchange:
 
     def set_val_psil(self, PFD, T_air, CO2, RH, wind, P_air, leaf_n_content, leaf_width, LWP, ET_supply):
         self.weather = Weather(PFD, T_air, CO2, RH, wind, P_air)
-        self.leaf = PhotosyntheticLeaf(LWP, leaf_n_content, leaf_width, self.atmos, ET_supply)
+        self.leaf = PhotosyntheticLeaf(LWP, leaf_n_content, leaf_width, self.weather, ET_supply)
         self.leaf.exchange()
 
     @property

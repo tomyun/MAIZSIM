@@ -149,10 +149,10 @@ class Photosynthesis(Trait):
     def temperature(self):
         return self._weighted(self.temperature_array)
 
-    #TODO is it needed?
     @property
     def vapor_pressure_deficit(self):
-        return self.sunlit.VPD
+        #HACK only use sunlit leaves?
+        return np.fmax(0, self.sunlit.VPD)
 
     @property
     def conductance(self):

@@ -6,7 +6,7 @@ class Carbon(Trait):
     def setup(self):
         self.reserve = 0
         self.pool = 0
-
+        self.root_pool = 0
         self.supply = 0 # daily mobilization of carbon
         #self.demand = 0 # property
 
@@ -36,16 +36,19 @@ class Carbon(Trait):
         self.reserve += self.pool
         self.pool = 0
 
-    def update_pool_with_root_residual(self):
-        #TODO need output from 2DSOIL
-        self.pool += self.p.soil.pcrl - self.p.soil.pcrs
-
     def allocate_with_seed(self):
         self.reserve = self.p.mass.seed * self._content
         # assume it takes 20 days to exhaust seed C reserve
         #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (initInfo.timeStep / 60))
         self.translocate_to_pool()
         #FIXME the original code did not reset pool here
+
+    def reset_root_pool(self):
+        self.root_pool = 0
+
+    def update_root_pool_with_residual(self):
+        #TODO need output from 2DSOIL
+        self.root_pool += self.p.soil.pcrl - self.p.soil.pcrs
 
     @property
     def _content(self):
@@ -56,7 +59,7 @@ class Carbon(Trait):
     @property
     def _temperature_effect(self):
         #FIXME properly handle T_air
-        T_air = self.p.atmos.T_air
+        T_air = self.p.weather.T_air
 
         # this needs to be f of temperature, source/sink relations, nitrogen, and probably water
         # a valve function is necessary because assimilates from CPool cannot be dumped instantanesly to parts
@@ -96,8 +99,7 @@ class Carbon(Trait):
         Q10 = 2.0 # typical Q10 value for respiration, Loomis and Amthor (1999) Crop Sci 39:1584-1596
         #Q10 = 2.1 # where does this value come from?
 
-        #FIXME proper hanlding of init object
-        dt = self.p.init.time_step / (24 * 60)
+        dt = self.p.initials.timestep / (24 * 60)
 
         # gCH2O g-1DM day-1 at 20C for young plants, Goudriaan and van Laar (1994) Wageningen textbook p 54, 60-61
         #coeff = 0.015
@@ -108,8 +110,7 @@ class Carbon(Trait):
         # no maint cost for dead materials but needs to be more mechanistic, SK
         agefn = 1.0
 
-        #FIXME proper handling of atmos object
-        q10fn = Q10 ** ((self.p.atmos.air_T - 20.0) / 10) # should be soil temperature
+        q10fn = Q10 ** ((self.p.weather.air_T - 20.0) / 10) # should be soil temperature
         return q10fn * coeff * self.p.mass.total * dt # gCH2O dt-1, agefn effect removed. 11/17/14. SK.
 
     @property
@@ -118,8 +119,7 @@ class Carbon(Trait):
             # here only grain and root dry matter increases root should be zero but it is small now.
             max_kernel_no = 800 # assumed maximum kerner number per ear
             # max kernel filling rate = 0.012g Kernel-1 day-1, Grant (1989)
-            #FIXME proper hanlding of init object
-            dt = self.p.init.time_step / (24 * 60)
+            dt = self.p.initials.timestep / (24 * 60)
             max_kernel_fill_rate = 0.012 * dt
             #dt added c_content
             return max_kernel_no * max_kernel_fill_rate * self._temperature_effect * self._content
@@ -133,7 +133,7 @@ class Carbon(Trait):
         maintenance_respiration = self.maintenance_respiration
 
         #HACK handle residual root carbon from 2DSOIL here, not in partition()
-        self.update_pool_with_root_residual()
+        self.update_root_pool_with_root()
 
         if self.pool > self.demand:
             # CADD from Grant

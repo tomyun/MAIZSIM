@@ -3,8 +3,7 @@ from . import stage
 class Phenology(object):
     def __init__(self, plant):
         self.plant = plant
-        #TODO make use of InitInfo object
-        self.timestep = plant.info.timestep
+        self.timestep = plant.initials.timestep
         self.setup()
 
     def setup(self):
@@ -63,8 +62,7 @@ class Phenology(object):
 
     @property
     def leaves_generic(self):
-        #TODO from TInitInfo
-        return 15
+        return self.plant.variety.generic_leaf_number
 
     @property
     def leaves_initiated(self):
@@ -77,8 +75,7 @@ class Phenology(object):
     #TODO is it relevant here?
     @property
     def temperature(self):
-        #TODO modify update() to get Atmos object...
-        return T
+        return self.plant.weather.T_air
 
     @property
     def growing_temperature(self):
@@ -106,21 +103,34 @@ class Phenology(object):
         return self.emergence.over()
 
     @property
+    def tassel_initiated(self):
+        return self.tassel_initiation.over()
+
+    @property
     def vegetative_growing(self):
-        return self.germination.over() and not self.tassel_initiation.over()
+        return self.germinated and not self.tassel_initiated
 
     @property
     def silking(self):
         return self.silking.ing()
 
     @property
+    def silked(self):
+        return self.silking.over()
+
+    @property
     def grain_filling(self):
         return self.grain_filling_initiation.over()
+
+    @property
+    def matured(self):
+        return self.mature.over()
 
     @property
     def dead(self):
         return self.death.over()
 
+    # GDDsum
     @property
     def gdd_after_emergence(self):
         if self.emergence.over():
@@ -142,3 +152,23 @@ class Phenology(object):
     @property
     def leaf_appearance_fraction_since_tassel_initiation(self):
         return self.leaves_appeared_since_tassel_initiation / self.leaves_to_appear_since_tassel_initiation
+
+    @property
+    def current_stage(self):
+        if self.matured:
+            return "Matured"
+        elif self.grain_filling:
+            return "grainFill"
+        elif self.silked:
+            return "Silked"
+        #FIXME no flowered (anthesis)?
+        #elif self.flowered:
+            #return "Flowered"
+        elif self.tassel_initiated:
+            return "Tasselinit"
+        elif self.emerged:
+            return "Emerged"
+        elif self.dead:
+            return "Inactive"
+        else:
+            return "none"

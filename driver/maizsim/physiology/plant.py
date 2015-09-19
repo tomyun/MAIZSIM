@@ -1,25 +1,29 @@
 from ..phenology import Phenology
 from ..morphology import NodalUnit
 from .gasexchange import GasExchange
+from ..timer import Timer
 
 import numpy as np
 
 #TODO split into multiple mixins
 class Plant:
-    def __init__(self, info):
-        #TODO implement InitInfo alternatives
-        self.info = info
+    def __init__(self, initials, variety):
+        self.initials = initials
+        self.variety = variety
 
-        #timestep = info...
         #TODO pass PRIMORDIA as initial_leaves
         self.primordia = 5
 
-        self.pheno = Phenology(timestep)
+        self.weather = None
+        self.soil = None
+
+        self.pheno = Phenology(self)
         self.mass = Mass(self)
         self.area = Area(self)
         self.count = Count(self)
         self.carbon = Carbon(self)
         self.nitrogen = Nitrogen(self)
+        self.water = Water(self)
         self.photosynthesis = Photosynthesis(self)
 
         #TODO make another trait object for the structure?
@@ -69,9 +73,12 @@ class Plant:
     # Update #
     ##########
 
-    def update(self, atmos, predawn_lwp):
-        #TODO pass atmos as is?
-        self.pheno.update(atmos.T_air)
+    def update(self, weather, soil):
+        self.weather = weather
+        self.soil = soil
+
+        #TODO pass weather as is?
+        self.pheno.update(weather.T_air)
 
         if pheno.germinating():
             #TODO temperature setting?
@@ -93,22 +100,21 @@ class Plant:
 
             #TODO logics clean up
             if not first_leaf.appeared:
-                self.maintenance_respiration(atmos) #FIXME no side-effect
+                #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
                 self.update_seed_mass()
             else:
                 self.calc_gas_exchange()
                 self.carbon.assimilate_to_pool()
-                self.maintenance_respiration(atmos) #FIXME no side-effect
+                #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
                 self.update_seed_mass() #FIXME with different ratio
         elif not pheno.dead():
             self.calc_gas_exchange()
             self.carbon.assimilate_to_pool()
-            #self.maintenance_respiration(atmos) #FIXME no side-effect
+            #self.maintenance_respiration() #FIXME no side-effect
             self.allocate_carbon()
-            #TODO need DateTime like object
-            if atmos.time == midnight:
+            if weather.time.hour = 0: # midnight
                 self.carbon.reset_pool()
             else:
                 self.carbon.assimilate_to_pool()
@@ -121,26 +127,28 @@ class Plant:
 
     #TODO unify naming convention for processes (i.e. verb?)
 
-    def calc_gas_exchange(self, atmos):
+    def calc_gas_exchange(self):
         #tau = 0.50 # atmospheric transmittance, to be implemented as a variable => done
-
-        atm_pressure = 100.0 # kPa, to be predicted using altitude
-        #FIXME fix atmos.P_air?
-        atmos.P_air = atm_pressure
 
         LAF = 1.37 # leaf angle factor for corn leaves, Campbell and Norman (1998)
         leaf_width = 5.0 # to be calculated when implemented for individal leaves
-
-        #TODO handle plant_density from initInfo object
         LAI = self.area.leaf_area_index
 
         #TODO how do we get LeafWP and ET_supply?
-        LWP = weather.LeafWP
-        ET_supply = weather.ET_supply * initInfo.plant_density / 3600 / 18.01 / LAI
+        LWP = self.soil.WP_leaf
+        ET_supply = self.water.supply * self.initials.plant_density / 3600 / 18.01 / LAI
+
+        jday = Timer.julian_day_from_datetime(self.weather.time)
+        jhour = Timer.julian_hour_from_datetime(self.weather.time)
 
         #TODO integrate lightenv with Atmosphere class?
         #TODO lightenv.dll needs to be translated to C++. It slows down the execution, 3/16/05, SK
-        self.lightenv.radTrans2(weather.jday, weather.time, initInfo.latitude, initInfo.longitude, weather.solRad, weather.PFD, LAI, LAF)
+        self.lightenv.radTrans2(
+            jday, jhour,
+            self.initials.latitude, self.initials.longitude,
+            self.weather.sol_rad, self.weather.PFD,
+            LAI, LAF
+        )
         # temp7 = lightenv.getNIRtot()
 
         # Calculating transpiration and photosynthesis without stomatal control Y
@@ -149,17 +157,17 @@ class Plant:
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
         self.sunlit.set_val_psil(
              lightenv.sunlitPFD(),
-             atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
+             self.weather.T_air, self.weather.CO2, self.weather.RH, self.weather.wind, self.weather.P_air,
              self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
 
         self.shaded.set_val_psil(
              lightenv.shadedPFD(),
-             atmos.T_air, atmos.CO2, atmos.RH, atmos.wind, atmos.P_air,
+             self.weather.T_air, self.weather.CO2, self.weather.RH, self.weather.wind, self.weather.P_air,
              self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
         )
 
-    def allocate_carbon(self, atmos):
+    def allocate_carbon(self):
         self.carbon.make_supply()
 
         #FIXME just for validating total imports of carbohydrate
@@ -211,7 +219,7 @@ class Plant:
 
         # checking the balance if sums up to shootPart
         #part_sum = self.carbon.stem + self.carbon.ear + self.carbon.leaf
-        #if atmos.time == 0.5:
+        #if self.weather.time.hour == 12: # noon?
             #print("adding CH2O: {} to grain".format(self.carbon.grain))
             #print("Sum of part coeff is {} and shoot CH2O is {}".format(part_sum, self.carbon.shoot))
         #print("Carbon pool = {}".format(self.carbon.pool))

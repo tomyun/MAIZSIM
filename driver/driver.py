@@ -14,9 +14,23 @@ T = soil.time_public
 M = soil.module_public
 F = soil.datafilenames
 
+from maizsim.io import config
+from maizsim.atmosphere import Weather
+from maizsim.rhizosphere import Soil
+
 class Driver:
     def __init__(self, runfile='test.dat'):
         soil.datafilenames.runfile[:] = runfile
+        self.setup()
+
+    def setup(self):
+        self.load_config(runfile)
+
+    #TODO implement more consolidated management
+    def load_config(self, runfile):
+        r = config.Run(runfile)
+        self.initials = config.Initials(r.initials)
+        self.variety = config.Variety(r.variety)
 
     def _init(self):
         soil.initialize()
@@ -57,18 +71,21 @@ class Driver:
 
             self._update_nitrogen_uptake_error(S)
 
-            w = self._create_weather(T, W)
-            self._update_weather_waterpotential(w, S)
-            self._update_weather_root(w, S, N)
-            self._update_weather_evapotranspiration(w, S)
-            self._update_weather_soil(w, G, N)
+            #HACK replace TWeather with Weather, Soil objects
+            #w = self._create_weather(T, W)
+            #self._update_weather_waterpotential(w, S)
+            #self._update_weather_root(w, S, N)
+            #self._update_weather_evapotranspiration(w, S)
+            #self._update_weather_soil(w, G, N)
+            #FIXME only remaining is ET_supply update
+            self._update_plant_evapotranspiration(S)
 
             self._run_controller(w, self.predawn_lwp)
 
-            if not self.develop.Germinated():
+            if not self.plant.phenology.germinated:
                 self._handle_not_germinated(w)
 
-            if self.develop.Emerged():
+            if self.plant.phenology.emerged:
                 self._handle_emerged(w, S)
 
             self._handle_dead_or_not(M, T)
@@ -82,22 +99,24 @@ class Driver:
             return vf, gf, lf
 
         # Set up parameters from initials file whose reading is moved to soil model (Init.for).
-        def create_init_info(S, W, T):
-            ii = crop.TInitInfo()
-            ii.plantDensity = S.poparea.item()
-            ii.latitude = W.latude.item()
-            ii.longitude = W.longitude.item()
-            ii.altitude = W.altitude.item()
-            ii.year = T.year.item()
-            ii.sowingDay = T.sowingday.item()
-            ii.beginDay = T.beginday.item()
-            ii.endDay = T.endday.item()
-            ii.timeStep = T.timestep.item()
-            return ii
+        # def create_init_info(S, W, T):
+        #     ii = crop.TInitInfo()
+        #     ii.plantDensity = S.poparea.item()
+        #     ii.latitude = W.latude.item()
+        #     ii.longitude = W.longitude.item()
+        #     ii.altitude = W.altitude.item()
+        #     ii.year = T.year.item()
+        #     ii.sowingDay = T.sowingday.item()
+        #     ii.beginDay = T.beginday.item()
+        #     ii.endDay = T.endday.item()
+        #     ii.timeStep = T.timestep.item()
+        #     return ii
 
         vf, gf, lf = get_filenames(F)
-        ii = create_init_info(S, W, T)
-        self.controller = crop.CController(vf, gf, lf, ii)
+        #ii = create_init_info(S, W, T)
+        #self.controller = crop.CController(vf, gf, lf, ii)
+        #TODO integrate load_config with Controller
+        self.controller = Controller(self.initials, self.variety, gf, lf)
 
     def _setup_shootr(self, S):
         S.lcai = 0
@@ -124,15 +143,15 @@ class Driver:
 
     @property
     def plant(self):
-        return self.controller.getPlant()
+        return self.controller.plant
 
-    @property
-    def develop(self):
-        return self.plant.get_develop()
+    # @property
+    # def develop(self):
+    #     return self.plant.get_develop()
 
-    @property
-    def initinfo(self):
-        return self.controller.getInitInfo()
+    # @property
+    # def initinfo(self):
+    #     return self.controller.getInitInfo()
 
     #########
     # Misc. #
@@ -152,6 +171,7 @@ class Driver:
 
     #FIXME: can we eliminate them?
     def _setup_vars(self):
+        # SLNmin: base Specific leaf nitrogen content; for now assume it's 0.5 YY
         self.sln_min = 0.5
         self.predawn_lwp = -0.05
         self.old_shoot_weight_per_m2 = 0.
@@ -165,7 +185,7 @@ class Driver:
     def _reset_uptakes(self, S):
         # nitrogen uptake value from 2dsoil accumulated between time steps mg/plant
         #SK 8/20/10: This is curious but OK
-        self.nitrogen_uptake = self.plant.get_N() * self.pop_slab
+        self.nitrogen_uptake = self.plant.nitrogen.pool * self.pop_slab
 
         # hourly water uptake from 2dsoil
         self.water_uptake = 0.
@@ -182,16 +202,17 @@ class Driver:
         self.nitrogen_uptake += S.sincrsink / 1e6
 
         if self.nitrogen_uptake > 0:
+            #FIXME currently no handling of nitrogen loss
             nuptake = self.nitrogen_uptake / self.pop_slab
-            leafloss = self.plant.get_droppedLfArea()
+            leafloss = self.plant.area.dropped_leaf
             nloss = leafloss * self.sln_min
-            # SLNmin: base Specific leaf nitrogen content; for now assume it's 0.5 YY
 
             #SK 8/20/10: Here seems to be the only place where totalN of the plant is set.
             # NitrogenUptake is initiated from get_N at the begining of the timestep so OK.
-            self.plant.set_N(nuptake)
+            self.plant.nitrogen.set_pool(nuptake)
             # Units are converted from g slab-1 to g plant -1 YY
             # need to look at loss of N in the dropped leaf (plant N goes negative?)
+            #FIXME no nitrogen handling in Plant
             #self.plant.set_N(nuptake - nloss)
 
     def _update_water_uptake(self, S, T):
@@ -199,7 +220,9 @@ class Driver:
 
     def _update_nitrogen_uptake_error(self, S):
         # Calculate error for demand and actual uptake, if negative, demand is greater then uptake.
-        err = self.nitrogen_uptake / self.pop_slab - self.plant.get_CumulativeNitrogenDemand()
+        #FIXME no nitrogen handling in Plant
+        #err = self.nitrogen_uptake / self.pop_slab - self.plant.get_CumulativeNitrogenDemand()
+        err = self.nitrogen_uptake / self.pop_slab - self.cumulative_nitrogen_demand_error
         self.nitrogen_demand_error = err
         self.cumulative_nitrogen_demand_error += err
         S.ndemanderror = self.nitrogen_demand_error
@@ -267,6 +290,7 @@ class Driver:
         w.ThetaAvail = N.thetaavail / self.pop_slab
 
     def _update_weather_evapotranspiration(self, w, S):
+        #FIXME LAI check might be not needed, as gas exchange module will deal with it anyways
         # ET_Supply is the actual amount of water that can be taken from the soil slab ( derived from AWUPS, g day-1 slab-1). To compare this variable with the et rate in maizesim it has to be converted into grams water per plant. To do this multiply by EOMULT to double slab width if plant is at the edge. Then multiply by 100/PopRow to get area inhabited by the plant. This provides a per plant estimate from area.
         if S.lai == 0:
             w.ET_supply = 0.
@@ -278,6 +302,19 @@ class Driver:
 
             # for debugging
             ET_diff = w.ET_supply * 24 - S.et_demand
+
+    def _update_plant_evapotranspiration(self, S):
+        # ET_Supply is the actual amount of water that can be taken from the soil slab ( derived from AWUPS, g day-1 slab-1). To compare this variable with the et rate in maizesim it has to be converted into grams water per plant. To do this multiply by EOMULT to double slab width if plant is at the edge. Then multiply by 100/PopRow to get area inhabited by the plant. This provides a per plant estimate from area.
+        if S.lai == 0:
+            self.plant.water.supply = 0.
+        else:
+            # Note water uptake has been summed over the past hour so it is an hourly amount
+            # into MAIZESIM Yang 8/15/06, dt 4/24/2011
+            self.plant.water.supply = self.water_uptake / (S.eomult * S.poprow) * 100.
+            #dt 4-24-2011 I replaced SHOOTR->AWUPS with WaterUptake. AWUPS is an instantaneous value.
+
+            # for debugging
+            ET_diff = self.plant.water.supply * 24 - S.et_demand
 
     def _update_weather_soil(self, w, G, N):
         # First find top of grid.
@@ -322,21 +359,21 @@ class Driver:
         #dt 03/14/2011- I added a pool of carbo to hold leftover carbon from root growth, here it is implemented - see also plant
         # This holds any carbon not used for root growth in the previous time step
         plant = self.plant
-        pool = plant.get_C_pool_root()
-        root = plant.get_rootPart()
-        shoot = plant.get_shootPart()
-        ii = self.initinfo
+        pool = plant.carbon.root_pool
+        root = plant.carbon.root
+        shoot = plant.carbon.shoot
+        #ii = self.initinfo
 
         # this assures the pool is only used at night
         # minimizes complexity when pcrq has a value
         # since we have to add leftover carbo from pcrq to the shoot
         if pool > 0 and root < 0.00001:
             S.pcrl = (root + pool) * 24*self.pop_slab
-            plant.set_C_pool_root(0.)
+            plant.carbon.reset_root_pool()
         else:
             S.pcrl = root * 24*self.pop_slab
 
-        if self.develop.GrainFillBegan():
+        if self.plant.phenology.grain_filling:
             S.pcrq = (root + 0.75*shoot) * 24*self.pop_slab
         else:
             S.pcrq = (root + shoot) * 24*self.pop_slab
@@ -350,18 +387,18 @@ class Driver:
         w.pcrl = S.pcrl / self.pop_slab/24.
         w.pcrq = S.pcrq / self.pop_slab/24.
 
-        S.lcai = plant.calcGreenLeafArea() * ii.plantDensity
+        S.lcai = plant.area.green_leaf * self.initials.plant_density
         S.cover = 1 - np.exp(-0.79*S.lcai)
         S.shade = S.cover * S.rowsp
         S.height = min(S.shade, S.rowsp)
-        S.et_demand = plant.get_ET() * 24 # pass ET demand from shoot to root. Yang
+        S.et_demand = plant.water.supply * 24 # pass ET demand from shoot to root. Yang
         # In GasExchange, the unit of ET is mmol m-2(leaf) sec-1
         # need to convert to grams plant-1
         # Here, multiplying ET by 0.018 and 3600*24 converts it to g m-2(ground) day-1
         # dividing it by plantdensity converts it to g plant-1 day-1
         S.lai = S.lcai
 
-        shoot_weight_per_m2 = plant.get_shootMass() * ii.plantDensity # Calculate total shoot mass per meter aquared YY
+        shoot_weight_per_m2 = plant.mass.shoot * self.initials.plant_density # Calculate total shoot mass per meter aquared YY
         mass_increase = shoot_weight_per_m2 - self.old_shoot_weight_per_m2 # Calculated increase in above-ground biomass per m2 YY
 
         # The biomass returned by getPlant()->get_shootMass() is the weight of each single plant (g/plant),
@@ -383,7 +420,8 @@ class Driver:
             # Calcualte above ground potential N concentration
             #nitrogen_ratio *= np.sqrt(shoot_weight_per_m2)
             nitrogen_ratio *= pow(shoot_weight_per_m2, 1 - b)
-        plant.set_NitrogenRatio(nitrogen_ratio / 10.)
+        #FIXME no nitrogen handling in Plant
+        #plant.set_NitrogenRatio(nitrogen_ratio / 10.)
 
         # U_N maximum observed N uptake rate (g N m-2 ground d-1) (Lindquist et al, 2007) YY
         # The unit of U_N is g N m-2 ground d-1
@@ -410,7 +448,7 @@ class Driver:
         # in existing biomass, equation 3 in Lindquist et al. 2007)
         # the returned value from get_N() is in g N/plant. It has to be converted to g/m-2 ground
         # that's why the actual n content is mulitpled by pSC->getIniInfo().plantDensity/(100*100) YY
-        U_D = a * 10 / 100. * pow(shoot_weight_per_m2, -b) - plant.get_N() * ii.plantDensity
+        U_D = a * 10 / 100. * pow(shoot_weight_per_m2, -b) - self.plant.nitrogen.pool * self.initials.plant_density
 
         # set up account of N here
         # first hourly
@@ -418,16 +456,19 @@ class Driver:
 
         # houly rate per day
         hourly_actual_n_from_soil = (self.nitrogen_uptake - self.nitrogen_uptake_old) / self.pop_slab
-        plant.set_HourlyNitrogenSoilUptake(hourly_actual_n_from_soil)
+        #FIXME no nitrogen handling in Plant
+        #plant.set_HourlyNitrogenSoilUptake(hourly_actual_n_from_soil)
 
         # Determine the nitrogen demand (equation 1 Lindquist et al. 2007) in grams plant-1
-        hourly_nitrogen_demand = max(U_P, 0) / ii.plantDensity / 24.
-        plant.set_HourlyNitrogenDemand(hourly_nitrogen_demand)
+        hourly_nitrogen_demand = max(U_P, 0) / self.initials.plant_density / 24.
+        #FIXME no nitrogen handling in Plant
+        #plant.set_HourlyNitrogenDemand(hourly_nitrogen_demand)
 
         # now do cumulative amounts
         self.cumulative_nitrogen_demand += hourly_nitrogen_demand # grams plant-1 day-1
-        plant.set_CumulativeNitrogenDemand(self.cumulative_nitrogen_demand)
-        plant.set_CumulativeNitrogenSoilUptake(self.nitrogen_uptake / self.pop_slab)
+        #FIXME no nitrogen handling in Plant
+        #plant.set_CumulativeNitrogenDemand(self.cumulative_nitrogen_demand)
+        #plant.set_CumulativeNitrogenSoilUptake(self.nitrogen_uptake / self.pop_slab)
 
         # Pass the nitrogen demand into 2dsoil YY
         # Units are ug slab-1
@@ -445,7 +486,7 @@ class Driver:
         #S.cumulativendemanderror = self.cumulative_nitrogen_demand_error
 
     def _handle_dead_or_not(self, M, T):
-        if self.develop.Dead():
+        if self.plant.phenology.dead:
             print("Completing crop simulation...")
 
             # tell 2dsoil that crops harvested

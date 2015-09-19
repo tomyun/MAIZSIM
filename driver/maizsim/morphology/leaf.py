@@ -175,8 +175,7 @@ class Leaf(Organ):
     # when predawn leaf water potential decreases. Parameterization of rf_psil
     # and rf_sensitivity are done with the data from Boyer (1970) and Tanguilig et al (1987) YY
     def _water_potential_effect(self, threshold):
-        #TODO access predawn_lwp from Atmos or Soil object
-        #psi_predawn =
+        psi_predawn = self.p.soil.WP_leaf_predawn
         psi_th = threshold # threshold wp below which stress effect shows up
 
         # DT Oct 10, 2012 changed this so it was not as sensitive to stress near -0.5 lwp
@@ -328,7 +327,6 @@ class Leaf(Organ):
     ##########
 
     #FIXME signature mismatch with Organ: T vs predawn_lwp
-    #TODO put predawn_lwp in Atmos or Soil object
     def update(self):
         super().update(self.pheno.temperature)
         self.expand()

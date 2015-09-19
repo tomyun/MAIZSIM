@@ -16,8 +16,7 @@ class Area(Trait):
 
     @property
     def leaf_area_index(self):
-        #TODO handle info.plant_density
-        return self.green_leaf * info.plant_density / 100**2
+        return self.green_leaf * self.p.initials.plant_density / 100**2
 
     # actualgreenArea is the green area of leaf growing under carbon limitation
 	#SK 8/22/10: There appears to be no distinction between these two variables in the code.
@@ -41,3 +40,9 @@ class Area(Trait):
     @property
     def relative_leaf_increase(self):
         return sum([nu.leaf.relative_area_increase for nu in self.p.nodal_units])
+
+    #FIXME it doesn't seem to be 'actual' dropped leaf area
+    # calculated dropped leaf area YY
+    @property
+    def dropped_leaf(self):
+        return self.potential_leaf - self.green_leaf

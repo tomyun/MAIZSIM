@@ -13,7 +13,7 @@ class Nitrogen(Trait):
 
     def set_pool(self, pool):
         shoot_mass = self.p.mass.shoot
-        if shoot_mass * self.p.info.plant_density <= 100: # g m-2
+        if shoot_mass * self.p.initials.plant_density <= 100: # g m-2
             # when shoot biomass is lower than 100 g/m2, the maximum [N] allowed is 6.3%
             # shoot biomass and Nitrogen are in g
             # need to adjust demand or else there will be mass balance problems
