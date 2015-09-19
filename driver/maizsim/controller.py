@@ -1,6 +1,8 @@
 from .timer import Timer
 from .physiology import Plant
 
+import pandas as pd
+
 class Controller:
     def __init__(self, initials, variety, crop_filename, leaf_filename):
         self.initials = initials
