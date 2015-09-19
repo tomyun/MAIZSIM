@@ -66,7 +66,7 @@ class Driver:
 
         if abs(T.time - T.tnext[self.mod_num - 1]) < abs(0.001 * T.step):
             # If the sowing date has come and there is not plant, let the program know so other calculations are not done.
-            if M.nshoot == 0 and abs(T.time - self.controller.getSowingDay()) < 0.001:
+            if M.nshoot == 0 and abs(T.time - self.initials.sowing_day) < 0.001:
                 M.nshoot = 1
 
             self._update_nitrogen_uptake_error(S)
@@ -167,7 +167,7 @@ class Driver:
         M.nummod += 1
         self.mod_num = M.nummod.item()
 
-        T.tnext[self.mod_num - 1] = self.controller.getSowingDay()
+        T.tnext[self.mod_num - 1] = self.initials.sowing_day
 
     #FIXME: can we eliminate them?
     def _setup_vars(self):
