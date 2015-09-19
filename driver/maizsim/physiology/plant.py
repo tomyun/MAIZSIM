@@ -1,5 +1,12 @@
 from ..phenology import Phenology
 from ..morphology import NodalUnit
+from .mass import Mass
+from .area import Area
+from .count import Count
+from .carbon import Carbon
+from .nitrogen import Nitrogen
+from .water import Water
+from .photosynthesis import Photosynthesis
 from ..timer import Timer
 
 import numpy as np
@@ -16,7 +23,14 @@ class Plant:
         self.weather = None
         self.soil = None
 
+        # phenology
         self.pheno = Phenology(self)
+
+        # morphology
+        #TODO make another trait object for the structure?
+        self.setup_structure()
+
+        # physiological traits
         self.mass = Mass(self)
         self.area = Area(self)
         self.count = Count(self)
@@ -24,9 +38,6 @@ class Plant:
         self.nitrogen = Nitrogen(self)
         self.water = Water(self)
         self.photosynthesis = Photosynthesis(self)
-
-        #TODO make another trait object for the structure?
-        self.setup_structure()
 
     def setup_structure(self):
         self.root = None
