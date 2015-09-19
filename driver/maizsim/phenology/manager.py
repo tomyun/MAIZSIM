@@ -3,7 +3,8 @@ from . import stage
 class Phenology(object):
     def __init__(self, plant):
         self.plant = plant
-        self.timestep = plant.initials.timestep
+        #HACK assumes daily timestep
+        self.timestep = plant.initials.timestep / (24 * 60) # converting minute to day decimal, 1 = a day
         self.setup()
 
     def setup(self):

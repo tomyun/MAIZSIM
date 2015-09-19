@@ -7,10 +7,11 @@ class Leaf(Organ):
     def __init__(self, nodal_unit):
         super().__init__(nodal_unit.plant)
         self.nodal_unit = nodal_unit
-        self._elongation_tracker = BetaFunc(timestep=1/24/60, R_max=1.0)
-        self._area_tracker = Accumulator(timestep=1/24/60)
-        self._aging_tracker = Q10Func(timestep=1/24/60, T_opt=self.p.pheno.optimal_temperature)
-        self._senescence_tracker = Q10Func(timestep=1/24/60, T_opt=self.p.pheno.optimal_temperature)
+        dt = self.p.pheno.timestep
+        self._elongation_tracker = BetaFunc(R_max=1.0).use_timestep(dt)
+        self._area_tracker = Accumulator().use_timestep(dt)
+        self._aging_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
+        self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
 
     def setup(self):
         self.rank = self.nodal_unit.rank

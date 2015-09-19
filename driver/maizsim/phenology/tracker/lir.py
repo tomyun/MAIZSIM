@@ -7,8 +7,12 @@ class LeafInductionRate(Tracker):
     def setup(self, pheno, gst_tracker, juvenile_leaves):
         self.pheno = pheno
         self.gst_tracker = gst_tracker
-        self.temperature_tracker = Tracker(pheno.timestep)
+        self.temperature_tracker = Tracker()
         self.juvenile_leaves = juvenile_leaves
+
+    def use_timestep(self, timestep):
+        self.temperature_tracker.use_timestep(timestep)
+        return super().use_timestep(timestep)
 
     def calc(self, T):
         #TODO implement on_first_update() interface?

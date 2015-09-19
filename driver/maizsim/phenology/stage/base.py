@@ -4,12 +4,11 @@ class Stage(object):
     def __init__(self, pheno):
         self.pheno = pheno
         self.setup()
-        self._tracker = self.tracker(self.pheno.timestep) # per day?
+        self._tracker = self.tracker().use_timestep(pheno.timestep)
 
     def setup(self):
         pass
 
-    #TODO use @ decorator instead?
     def tracker(self):
         raise NotImplementedError("Need to create a list of Tracker objects.")
 
