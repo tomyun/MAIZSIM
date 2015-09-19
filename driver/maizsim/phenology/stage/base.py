@@ -4,7 +4,7 @@ class Stage(object):
     def __init__(self, pheno):
         self.pheno = pheno
         self.setup()
-        self._tracker = self.tracker()
+        self._tracker = self.tracker(self.pheno.timestep) # per day?
 
     def setup(self):
         pass
@@ -15,8 +15,7 @@ class Stage(object):
 
     #TODO prevent duplicate updates
     def update(self, T):
-        dt = self.pheno.timestep # per day
-        self._tracker.update(T, dt)
+        self._tracker.update(T)
 
     def post_update(self):
         pass

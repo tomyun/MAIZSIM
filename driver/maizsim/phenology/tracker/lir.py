@@ -4,11 +4,11 @@ import numpy as np
 
 # note it's Tracker, not Accumulator
 class LeafInductionRate(Tracker):
-    def setup(self, gst_tracker, juvenile_leaves, pheno):
-        self.gst_tracker = gst_tracker
-        self.temperature_tracker = Tracker()
-        self.juvenile_leaves = juvenile_leaves
+    def setup(self, pheno, gst_tracker, juvenile_leaves):
         self.pheno = pheno
+        self.gst_tracker = gst_tracker
+        self.temperature_tracker = Tracker(pheno.timestep)
+        self.juvenile_leaves = juvenile_leaves
 
     def calc(self, T):
         #TODO implement on_first_update() interface?

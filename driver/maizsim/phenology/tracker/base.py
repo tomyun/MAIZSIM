@@ -1,7 +1,7 @@
 import numpy as np
 
 class Tracker(object):
-    def __init__(self, timestep=1, **kwargs):
+    def __init__(self, timestep, **kwargs):
         self.timestep = timestep
         self.reset()
         self.setup(**kwargs)

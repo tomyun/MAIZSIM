@@ -1,6 +1,8 @@
 from .base import Stage
 from ..tracker import LeafInductionRate
 
+import numpy as np
+
 class TasselInitiation(Stage):
     #FIXME use correct args
     def setup(self, juvenile_leaves=15, day_length=None):
@@ -10,9 +12,9 @@ class TasselInitiation(Stage):
 
     def tracker(self):
         return LeafInductionRate(
+            pheno=self.pheno, #FIXME to access weather.day_length
             gst_tracker=self.pheno.gst_tracker,
             juvenile_leaves=self.juvenile_leaves,
-            pheno=self.pheno #FIXME to access weather.day_length
         )
 
     @property
