@@ -89,10 +89,10 @@ class Plant:
         #TODO pass weather as is?
         self.pheno.update(weather.T_air)
 
-        if pheno.germinating():
+        if self.pheno.germinating:
             #TODO temperature setting?
             pass
-        elif pheno.emerging():
+        elif self.pheno.emerging:
             self.initiate_root()
 
             #TODO temperature setting?
@@ -118,7 +118,7 @@ class Plant:
                 #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
                 self.update_seed_mass() #FIXME with different ratio
-        elif not pheno.dead():
+        elif not self.pheno.dead:
             self.calc_gas_exchange()
             self.carbon.assimilate_to_pool()
             #self.maintenance_respiration() #FIXME no side-effect
