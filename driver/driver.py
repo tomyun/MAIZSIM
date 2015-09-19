@@ -33,6 +33,7 @@ class Driver:
         r = config.Run(runfile)
         self.initials = config.Initials(r.initials)
         self.variety = config.Variety(r.variety)
+        self.time = config.Time(r.time)
 
     def _init(self):
         soil.initialize()
@@ -119,7 +120,7 @@ class Driver:
         #ii = create_init_info(S, W, T)
         #self.controller = crop.CController(vf, gf, lf, ii)
         #TODO integrate load_config with Controller
-        self.controller = Controller(self.initials, self.variety, gf, lf)
+        self.controller = Controller(self.initials, self.variety, self.time, gf, lf)
 
     def _setup_shootr(self, S):
         S.lcai = 0

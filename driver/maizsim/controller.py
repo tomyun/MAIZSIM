@@ -4,9 +4,10 @@ from .physiology import Plant
 import pandas as pd
 
 class Controller:
-    def __init__(self, initials, variety, crop_filename, leaf_filename):
+    def __init__(self, initials, variety, time, crop_filename, leaf_filename):
         self.initials = initials
         self.variety = variety
+        self.time = time
         self.crop_filename = crop_filename
         self.leaf_filename = leaf_filename
         self.setup()
