@@ -150,7 +150,7 @@ class Controller:
         self.crop_ouptut.to_csv(self.crop_filename)
 
     def setup_leaf_output(self):
-        colmuns = [
+        columns = [
             'date',
             'jday',
             'time',
