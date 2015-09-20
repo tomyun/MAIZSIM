@@ -154,6 +154,10 @@ class Sun:
         d = radians(self.declination_angle)
         return arcsin(cos(h) * cos(d) * cos(p) + sin(d) * sin(p))
 
+    @property
+    def zenith_angle(self):
+        return abs(90 - self.elevation_angle)
+
     # The solar azimuth angle is the angular distance between due South and the
     # projection of the line of sight to the sun on the ground.
     # View point from south, morning: +, afternoon: -
