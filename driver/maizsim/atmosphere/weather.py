@@ -8,12 +8,14 @@ import copy
 ATM = 100 # kPa
 
 class Weather:
-    def __init__(self, time, PFD, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
+    def __init__(self, time, PFD, sol_rad, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
         self.setup(time, PFD, T_air, CO2, RH, wind, P_air, day_length)
 
-    def setup(self, time, PFD, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
+    def setup(self, time, PFD, sol_rad, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
         self.time = time
-        self.PFD = PFD
+        self.PFD = PFD # umol m-2 s-1
+        #FIXME can we calculate it?
+        self.sol_rad = sol_rad # J m-2
         self.CO2 = CO2 # ppm
         self.RH = RH # 0~1
         self.T_air = T_air # C
@@ -31,7 +33,7 @@ class Weather:
         return Weather(
             time=time,
             PFD=W.par[i]*4.6, # conversion from PAR in Wm-2 to umol s-1 m-2
-            #sol_rad=W.wattsm[i].item(), # conversion from Wm-2 to J m-2 in one hour Total Radiation incident at soil surface
+            sol_rad=W.wattsm[i].item(), # conversion from Wm-2 to J m-2 in one hour Total Radiation incident at soil surface
             T_air=T_air,
             CO2=W.co2.item(),
             RH=np.clip(VaporPressure.relative_humidity(T_air, W.vpd[i]), 0.1, 1.0), # % to 0~1
