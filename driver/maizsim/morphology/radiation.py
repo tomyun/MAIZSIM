@@ -42,10 +42,7 @@ class WaveBand(Enum):
 
 
 class Radiation:
-    def __init__(self):
-        pass
-
-    def setup(
+    def __init__(
         self,
         sun,
         leaf_area_index,
@@ -56,6 +53,9 @@ class Radiation:
         clumping=1,
         #r_h=0.05, #FIXME reflectance?
     ):
+        self.setup(sun, leaf_area_index, leaf_angle, leaf_angle_factor, wave_band, scattering, clumping)
+
+    def setup(self, sun, leaf_area_index, leaf_angle, leaf_angle_factor, wave_band, scattering, clumping):
         self.sun = sun
 
         # cumulative LAI at the layer
