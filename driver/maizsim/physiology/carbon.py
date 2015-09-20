@@ -39,7 +39,7 @@ class Carbon(Trait):
     def allocate_with_seed(self):
         self.reserve = self.p.mass.seed * self._content
         # assume it takes 20 days to exhaust seed C reserve
-        #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (initInfo.timeStep / 60))
+        #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (self.p.initials.timestep / 60))
         self.translocate_to_pool()
         #FIXME the original code did not reset pool here
 
@@ -110,7 +110,7 @@ class Carbon(Trait):
         # no maint cost for dead materials but needs to be more mechanistic, SK
         agefn = 1.0
 
-        q10fn = Q10 ** ((self.p.weather.air_T - 20.0) / 10) # should be soil temperature
+        q10fn = Q10 ** ((self.p.weather.T_air - 20.0) / 10) # should be soil temperature
         return q10fn * coeff * self.p.mass.total * dt # gCH2O dt-1, agefn effect removed. 11/17/14. SK.
 
     @property
