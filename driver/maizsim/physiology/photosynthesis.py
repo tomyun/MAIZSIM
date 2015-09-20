@@ -1,5 +1,7 @@
 from .trait import Trait
 from .gasexchange import GasExchange
+from ..atmosphere import Sun
+from ..morphology import Radiation
 from ..morphology.weight import Weight
 
 import numpy as np
@@ -9,14 +11,55 @@ class Photosynthesis(Trait):
     def setup(self):
         self.sunlit = GasExchange('Sunlit')
         self.shaded = GasExchange('Shaded')
+        self.radiation = None
+
+    # calc_gas_exchange() from Plant
+    def update(self):
+        #tau = 0.50 # atmospheric transmittance, to be implemented as a variable => done
+
+        LAF = 1.37 # leaf angle factor for corn leaves, Campbell and Norman (1998)
+        leaf_width = 5.0 # to be calculated when implemented for individal leaves
+        LAI = self.p.area.leaf_area_index
+
+        #TODO how do we get LeafWP and ET_supply?
+        LWP = self.p.soil.WP_leaf
+        ET_supply = self.p.water.supply * self.p.initials.plant_density / 3600 / 18.01 / LAI
+
+        # jday = Timer.julian_day_from_datetime(self.p.weather.time)
+        # jhour = Timer.julian_hour_from_datetime(self.p.weather.time)
+
+        #TODO integrate lightenv with Atmosphere class?
+        #TODO lightenv.dll needs to be translated to C++. It slows down the execution, 3/16/05, SK
+        # self.lightenv.radTrans2(
+        #     jday, jhour,
+        #     self.p.initials.latitude, self.p.initials.longitude,
+        #     self.p.weather.sol_rad, self.p.weather.PFD,
+        #     LAI, LAF
+        # )
+        # temp7 = lightenv.getNIRtot()
+
+        sun = Sun(self.p.weather.time, self.p.initials.latitude, self.p.initials.longitude, PAR=self.p.weather.PFD)
+        self.radiation = Radiation(sun, leaf_area_index=LAI, leaf_angle_factor=LAF)
+
+        # Calculating transpiration and photosynthesis without stomatal control Y
+        # call SetVal_NC()
+
+        # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
+        sunlit_weather = self.weather.copy()
+        sunlit_weather.PFD = self.radiation.irradiance_Q_sunlit()
+        self.sunlit.setup(sunlit_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
+
+        shaded_weather = self.weather.copy()
+        shaded_weather.PFD = self.radiation.irradiance_Q_shaded()
+        self.shaded.setup(shaded_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
 
     @property
     def sunlit_leaf_area_index(self):
-        return self.p.lightenv.sunlitLAI()
+        return self.radiation.sunlit_leaf_area_index if self.radiation else 0
 
     @property
     def shaded_leaf_area_index(self):
-        return self.p.lightenv.shadedLAI()
+        return self.radiation.shaded_leaf_area_index if self.radiation else 0
 
     @property
     def leaf_area_index_array(self):
@@ -93,11 +136,11 @@ class Photosynthesis(Trait):
 
     @property
     def _plant_per_m2(self):
-        return 1 / initInfo.plant_density
+        return 1 / self.p.initials.plant_density
 
     @property
     def _min_step_per_sec(self):
-        return 60 * initInfo.time_step
+        return 60 * self.p.initials.timestep
 
     # final values
 

@@ -137,44 +137,7 @@ class Plant:
     #TODO unify naming convention for processes (i.e. verb?)
 
     def calc_gas_exchange(self):
-        #tau = 0.50 # atmospheric transmittance, to be implemented as a variable => done
-
-        LAF = 1.37 # leaf angle factor for corn leaves, Campbell and Norman (1998)
-        leaf_width = 5.0 # to be calculated when implemented for individal leaves
-        LAI = self.area.leaf_area_index
-
-        #TODO how do we get LeafWP and ET_supply?
-        LWP = self.soil.WP_leaf
-        ET_supply = self.water.supply * self.initials.plant_density / 3600 / 18.01 / LAI
-
-        jday = Timer.julian_day_from_datetime(self.weather.time)
-        jhour = Timer.julian_hour_from_datetime(self.weather.time)
-
-        #TODO integrate lightenv with Atmosphere class?
-        #TODO lightenv.dll needs to be translated to C++. It slows down the execution, 3/16/05, SK
-        self.lightenv.radTrans2(
-            jday, jhour,
-            self.initials.latitude, self.initials.longitude,
-            self.weather.sol_rad, self.weather.PFD,
-            LAI, LAF
-        )
-        # temp7 = lightenv.getNIRtot()
-
-        # Calculating transpiration and photosynthesis without stomatal control Y
-        # call SetVal_NC()
-
-        # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
-        self.sunlit.set_val_psil(
-             lightenv.sunlitPFD(),
-             self.weather.T_air, self.weather.CO2, self.weather.RH, self.weather.wind, self.weather.P_air,
-             self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
-        )
-
-        self.shaded.set_val_psil(
-             lightenv.shadedPFD(),
-             self.weather.T_air, self.weather.CO2, self.weather.RH, self.weather.wind, self.weather.P_air,
-             self.nitrogen.leaf_content, leaf_width, LWP, ET_supply
-        )
+        self.photosynthesis.update()
 
     def allocate_carbon(self):
         self.carbon.make_supply()
