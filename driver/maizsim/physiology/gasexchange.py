@@ -405,24 +405,24 @@ class GasExchange:
 
     @property
     def A_gross(self):
-        return self.leaf.A_gross if self.leaf else None
+        return self.leaf.A_gross if self.leaf else 0
 
     @property
     def A_net(self):
-        return self.leaf.A_net if self.leaf else None
+        return self.leaf.A_net if self.leaf else 0
 
     @property
     def ET(self):
-        return self.leaf.ET if self.leaf else None
+        return self.leaf.ET if self.leaf else 0
 
     @property
     def T_leaf(self):
-        return self.leaf.temperature if self.leaf else None
+        return self.leaf.temperature if self.leaf else np.nan
 
     @property
     def VPD(self):
-        return VaporPressure.deficit(self.weather.T_air, self.weather.RH) if self.weather else None
+        return VaporPressure.deficit(self.weather.T_air, self.weather.RH) if self.weather else np.nan
 
     @property
     def gs(self):
-        return self.leaf.stomata.gs if self.leaf else None
+        return self.leaf.stomata.gs if self.leaf else np.nan
