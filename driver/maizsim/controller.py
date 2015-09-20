@@ -114,7 +114,7 @@ class Controller:
             self.plant.area.senescent_leaf,
             self.plant.area.leaf_area_index,
             weather.RH,
-            None, # self.plant.carbon_ratio,
+            #None, # self.plant.carbon_ratio,
             soil.WP_leaf, # print out leaf water potential Yang 8/22/06
             weather.PFD,
             None, # weather.sol_rad,
