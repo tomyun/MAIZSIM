@@ -28,13 +28,14 @@ PHOTON_UMOL_PER_J = 4.6
 SOLAR_CONSTANT = 1370.0
 
 class Sun:
-    def __init__(self):
-        pass
+    def __init__(self, time, latitude, longitude, altitude=50, transmissivity=0.5, PAR=None):
+        self.setup(time, latitude, longitude, altitude, transmissivity, PAR)
 
-    def setup(self, jday, jhour, latitude, longitude, altitude=50, transmissivity=0.5, PAR=None):
+    def setup(self, time, latitude, longitude, altitude, transmissivity, PAR):
         #HACK takes account different Julian day conventions (03-01 vs. 01-01)
-        self.day = int(Timer.datetime_from_julian_day(jday).strftime('%j'))
-        self.hour = jhour * 24
+        self.time = time
+        self.day = int(time.strftime('%j'))
+        self.hour = time.hour
         self.latitude = latitude # DO NOT convert to radians for consistency
         self.longitude = longitude # leave it as in degrees, used only once for solar noon calculation
         self.altitude = altitude # m from the sea level
