@@ -399,10 +399,10 @@ class GasExchange:
         self.soil = None
         self.leaf = None
 
-    def setup(self, weather, soil, leaf_n_content, leaf_width):
+    def setup(self, weather, soil, leaf_n_content, leaf_width, ET_supply):
         self.weather = weather
         self.soil = soil
-        self.leaf = PhotosyntheticLeaf(soil.WP_leaf, leaf_n_content, leaf_width, weather, soil.ET_supply)
+        self.leaf = PhotosyntheticLeaf(soil.WP_leaf, leaf_n_content, leaf_width, weather, ET_supply)
         self.leaf.exchange()
 
     @property

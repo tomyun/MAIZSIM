@@ -9,7 +9,6 @@ class Soil:
     def reset(self):
         self.time = None
         self.T_soil = None
-        self.ET_supply = None
         self.WP_leaf = None
         self.WP_leaf_predawn = None
         self.actual_root_carbon_supply_rate = None # PCRS (g day-1)

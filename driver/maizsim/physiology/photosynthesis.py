@@ -47,11 +47,11 @@ class Photosynthesis(Trait):
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
         sunlit_weather = self.p.weather.copy()
         sunlit_weather.PFD = self.radiation.irradiance_Q_sunlit()
-        self.sunlit.setup(sunlit_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
+        self.sunlit.setup(sunlit_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width, ET_supply)
 
         shaded_weather = self.p.weather.copy()
         shaded_weather.PFD = self.radiation.irradiance_Q_shaded()
-        self.shaded.setup(shaded_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
+        self.shaded.setup(shaded_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width, ET_supply)
 
     @property
     def sunlit_leaf_area_index(self):
