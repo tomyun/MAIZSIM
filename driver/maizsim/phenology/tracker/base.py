@@ -2,7 +2,7 @@ import numpy as np
 
 #HACK assumes fixed timestep (probably hourly)
 #TODO support dynamic timestep? ever needed?
-class Tracker(object):
+class Tracker:
     def __init__(self, **kwargs):
         self.reset()
         self.setup(**kwargs)

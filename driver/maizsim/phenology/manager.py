@@ -1,6 +1,6 @@
 from . import stage
 
-class Phenology(object):
+class Phenology:
     def __init__(self, plant):
         self.plant = plant
         #HACK assumes daily timestep

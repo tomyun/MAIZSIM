@@ -1,7 +1,7 @@
 from .weight import Weight
 from ..phenology.tracker import GrowingDegreeDays
 
-class Organ(object):
+class Organ:
     def __init__(self, plant):
         self.p = plant
         self._tracker = GrowingDegreeDays(T_base=8.0, T_opt=None, T_max=43.3).use_timestep(plant.pheno.timestep)

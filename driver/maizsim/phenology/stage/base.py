@@ -1,6 +1,6 @@
 import numpy as np
 
-class Stage(object):
+class Stage:
     def __init__(self, pheno):
         self.pheno = pheno
         self.setup()

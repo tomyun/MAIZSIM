@@ -1,4 +1,4 @@
-class Weight(object):
+class Weight:
     CO2 = 44.0098
     C = 12.0107
     CH2O = 30.031

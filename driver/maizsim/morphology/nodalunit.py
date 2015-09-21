@@ -11,8 +11,8 @@ class State(Enum):
     aging = 5
     terminated = 6
 
-class NodalUnit(object):
-    def __init__(self, plant, rank, mass):
+class NodalUnit:
+    def __init__(self, plant, rank):
         self.plant = plant
         self.rank = rank
         self.leaf = Leaf(self)
