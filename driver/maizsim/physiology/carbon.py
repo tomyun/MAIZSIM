@@ -84,7 +84,7 @@ class Carbon(Trait):
         # this is where source/sink (supply/demand) valve can come in to play
         # 0.2 is value for hourly interval, Grant (1989)
         hours = 5
-        return 1 / (hours * 60 / info.time_step)
+        return 1 / (hours * 60 / self.p.initials.timestep)
 
     @property
     # this is the same as (PhyllochronsSinceTI - lvsAtTI / (totalLeaves - lvsAtTI))
