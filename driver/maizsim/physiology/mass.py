@@ -32,11 +32,11 @@ class Mass(Trait):
     # It would be slightly greather than the green leaf mass because some senesced leaf area is included until they are complely aged (dead), SK
     @property
     def active_leaf(self):
-        return sum([nu.leaf.mass for nu in self.p.nodal_units if not nu.dropped])
+        return sum([nu.leaf.mass for nu in self.p.nodal_units if not nu.leaf.dropped])
 
     @property
     def dropped_leaf(self):
-        return sum([nu.leaf.mass for nu in self.p.nodal_units if nu.dropped])
+        return sum([nu.leaf.mass for nu in self.p.nodal_units if nu.leaf.dropped])
 
     @property
     def total_leaf(self):
