@@ -40,8 +40,9 @@ class Plant:
         self.photosynthesis = Photosynthesis(self)
 
     def setup_structure(self):
+        #TODO initiate_ear() like leaves and root
         self.ear = Ear(self)
-        self.root = Root(self)
+        self.root = None
         self.nodal_units = []
 
     def initiate_primordia(self):
@@ -58,8 +59,9 @@ class Plant:
         # This is so there is no discontinuity in root mass (relative to the carbon supplied by the plant later)
         # these are roots taht grew from the seed
 
-        #TODO use weather.TotalRootWeight from 2DSOIL
-        self.root.import_carbohydrate(self.soil.total_root_weight)
+        if self.root is None:
+            self.root = Root(self)
+            self.root.import_carbohydrate(self.soil.total_root_weight)
 
     def initiate_leaves(self):
         for i in range(self.pheno.leaves_initiated):
