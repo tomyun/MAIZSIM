@@ -68,7 +68,7 @@ class Leaf(Organ):
     def potential_length(self):
         LM_min = 115
         k = 24.0
-        extra_leaves = self.pheno.leaves_total - self.pheno.leaves_generic
+        extra_leaves = self.p.pheno.leaves_total - self.p.pheno.leaves_generic
         return np.sqrt(LM_min**2 + k * extra_leaves)
 
     @property
@@ -79,7 +79,7 @@ class Leaf(Organ):
     #TODO better name, shared by growth_duration and pontential_area
     def _rank_effect(self, weight=1):
         #TODO should be a plant parameter not leaf (?)
-        leaves = self.pheno.leaves_total
+        leaves = self.p.pheno.leaves_total
         n_m = 5.93 + 0.33 * leaves # the rank of the largest leaf. YY
         a = -10.61 + 0.25 * leaves * weight
         b = -5.99 + 0.27 * leaves * weight
@@ -117,7 +117,7 @@ class Leaf(Organ):
         maximum_area = self.potential_length * self.potential_width * self.area_ratio
 
         # Fig 4 of Birch et al. (1998)
-        leaf_number_effect = np.clip(np.exp(-1.17 + 0.047 * self.pheno.leaves_total), 0.5, 1.0)
+        leaf_number_effect = np.clip(np.exp(-1.17 + 0.047 * self.p.pheno.leaves_total), 0.5, 1.0)
 
         # equa 6. Fournier and Andrieu(1998) multiplied by Birch et al. (1998) leaf no effect
         # LA_max the area of the largest leaf
@@ -145,7 +145,7 @@ class Leaf(Organ):
         # phyllochron needed for next leaf appearance in degree days (GDD8) - 08/16/11, SK.
         #phyllochron = (dv->get_T_Opt()- Tb)/(dv->get_Rmax_LTAR());
 
-        T_grow = self.pheno.growing_temperature
+        T_grow = self.p.pheno.growing_temperature
         T_ratio = (T_grow - T_base) / (T_peak - T_base)
         # final leaf size is adjusted by growth temperature determining cell size during elongation
         return np.fmax(0, T_ratio * np.exp(1 - T_ratio))
@@ -302,7 +302,7 @@ class Leaf(Organ):
 
     @property
     def appeared(self):
-        return self.rank <= self.pheno.leaves_appeared
+        return self.rank <= self.p.pheno.leaves_appeared
 
     @property
     def growing(self):
@@ -337,7 +337,7 @@ class Leaf(Organ):
     # leaf expansiopn rate based on a determinate sigmoid function by Yin et al. (2003)
     def expand(self):
         if self.appeared and not self.mature:
-            self._elongation_tracker.update(self.pheno.temperature)
+            self._elongation_tracker.update(self.p.pheno.temperature)
             self._area_tracker.update(self.actual_area_increase)
 
             #HACK better ways to handle? e.g. signal callback?
@@ -345,7 +345,7 @@ class Leaf(Organ):
                 self.mature_gdd = self.physiological_age
 
     def senescence(self):
-        T = self.pheno.temperature
+        T = self.p.pheno.temperature
         if not self.aging:
             self._aging_tracker.update(T)
         else:
