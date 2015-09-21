@@ -112,7 +112,7 @@ class Leaf(Organ):
         # Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
         return np.fmax(0, -5.16 + 1.94 * self.rank)
 
-    @property(self):
+    @property
     def _leaf_number_effect(self):
         # Fig 4 of Birch et al. (1998)
         return np.clip(np.exp(-1.17 + 0.047 * self._total_leaves_at_initiation), 0.5, 1.0)
