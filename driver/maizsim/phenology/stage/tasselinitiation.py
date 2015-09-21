@@ -4,11 +4,11 @@ from ..tracker import LeafInductionRate
 import numpy as np
 
 class TasselInitiation(Stage):
-    #FIXME use correct args
+    #TODO manage juvenile/adult leaves in more general place (i.e. LeafInitiation/Appearance or Manager?)
     def setup(self, juvenile_leaves=15, day_length=None):
-        self.juvenile_leaves = juvenile_leaves
+        self._juvenile_leaves = juvenile_leaves
         self.day_length = day_length
-        self._appeared_leaves = 0
+        self._appeared_leaves_on_finish = 0
 
     def tracker(self):
         return LeafInductionRate(
@@ -18,36 +18,38 @@ class TasselInitiation(Stage):
         )
 
     @property
-    def initiated_leaves(self):
-        return self.pheno.leaf_initiation.leaves
+    def juvenile_leaves(self):
+        return self._juvenile_leaves
 
     @property
-    def added_leaves(self):
-        return np.fmin(0, self.initiated_leaves - self.juvenile_leaves)
+    def _adult_leaves(self):
+        return self.pheno.leaves_initiated - self.juvenile_leaves
+
+    @property
+    def adult_leaves(self):
+        return np.fmax(0, self._adult_leaves)
 
     @property
     def leaves_to_induce(self):
         return self.rate
 
+    #FIXME is it really needed?
     @property
-    def appeared_leaves(self):
+    def appeared_leaves_on_finish(self):
         return self._appeared_leaves
 
-    @property
-    def leaves_to_appear(self):
-        return self.initiated_leaves - self.appeared_leaves
-
     def ready(self):
-        return self.added_leaves >= 0
+        #HACK should be negative when not ready
+        return self._adult_leaves >= 0
 
     def over(self):
-        return self.added_leaves >= self.leaves_to_induce
+        return self.adult_leaves >= self.leaves_to_induce
 
     def finish(self):
         #TODO clean up leaf count variables
         self.current_leaf = self.youngest_leaf = self.total_leaves = self.initiated_leaves
         #HACK save the appeared leaves when tassel initiation is done
-        self._appeared_leaves = self.pheno.leaf_appearance.leaves
+        self._appeared_leaves_on_finish = self.pheno.leaves_appeared
 
         GDD_sum = self.pheno.gdd_tracker.rate
         T_grow = self.pheno.gst_tracker.rate

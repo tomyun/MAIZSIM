@@ -140,19 +140,29 @@ class Phenology:
         else:
             return 0
 
+    #TODO serve them directly from TasselInitiation?
     @property
     def leaves_appeared_since_tassel_initiation(self):
         #FIXME no need to use a separate tracker
         #return self.pti_tracker.rate
-        return self.leaves_appeared - self.tassel_initiation.appeared_leaves
+        if self.tassel_initiation.over():
+            return self.leaves_appeared - self.tassel_initiation.appeared_leaves_on_finish
+        else:
+            return 0
 
     @property
     def leaves_to_appear_since_tassel_initiation(self):
-        return self.tassel_initiation.leaves_to_appear
+        if self.tassel_initiation.over():
+            return self.leaves_initiated - self.tassel_initiation.appeared_leaves_on_finish
+        else:
+            return 0
 
     @property
     def leaf_appearance_fraction_since_tassel_initiation(self):
-        return self.leaves_appeared_since_tassel_initiation / self.leaves_to_appear_since_tassel_initiation
+        if self.tassel_initiation.over():
+            return self.leaves_appeared_since_tassel_initiation / self.leaves_to_appear_since_tassel_initiation
+        else:
+            return 0
 
     @property
     def current_stage(self):
