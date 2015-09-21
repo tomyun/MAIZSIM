@@ -289,7 +289,7 @@ class Leaf(Organ):
         #TODO is this default value needed?
         # no N stress
         #return 3.0
-        return self.plant.nitrogen.leaf_content
+        return self.p.nitrogen.leaf_content
 
     ##########
     # States #
