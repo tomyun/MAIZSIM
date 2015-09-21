@@ -182,7 +182,7 @@ class Plant:
                 total_demand += demand
 
                 leaf.import_carbohydrate(demand)
-        assert total_demand == self.carbon.leaf
+        #assert total_demand == self.carbon.leaf
 
         #FIXME what is the difference between import_carbohydrate()?
         #self.root.actual_carbon_increment = self.carbon.root
