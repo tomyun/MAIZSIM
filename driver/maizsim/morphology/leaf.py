@@ -15,7 +15,7 @@ class Leaf(Organ):
 
     def setup(self):
         #FIXME other means to store?
-        self.mature_gdd = None
+        self.mature_gdd = np.inf
 
         #FIXME needed?
         #self.leaf_calibrated_temperature = pheno.calibrated_tempreature()
