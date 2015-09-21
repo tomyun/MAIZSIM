@@ -27,6 +27,9 @@ class Driver:
 
     def setup(self, runfile):
         self.load_config(runfile)
+        #HACK to keep tracking records (needed for update soil.WP_leaf_predawn)
+        self.weather = Weather()
+        self.soil = Soil()
 
     #TODO implement more consolidated management
     def load_config(self, runfile):
@@ -345,8 +348,8 @@ class Driver:
         #     raise Exception("controller is in error: " + ier)
 
         self.controller.run(
-            Weather.from_2DSOIL(T, W),
-            Soil.from_2DSOIL(T, W, S, N, G),
+            self.weather.update_from_2DSOIL(T, W),
+            self.soil.update_from_2DSOIL(T, W, S, N, G),
         )
         # Pass both weather and leaf water potential into the "run" function
         # of the controller pSC YY
