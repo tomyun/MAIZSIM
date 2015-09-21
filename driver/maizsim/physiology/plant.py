@@ -112,13 +112,13 @@ class Plant:
             if not first_leaf.appeared:
                 #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
-                self.update_seed_mass()
+                #self.update_seed_mass()
             else:
                 self.calc_gas_exchange()
                 self.carbon.assimilate_to_pool()
                 #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
-                self.update_seed_mass() #FIXME with different ratio
+                #self.update_seed_mass() #FIXME with different ratio
         elif not self.pheno.dead:
             self.calc_gas_exchange()
             self.carbon.assimilate_to_pool()
