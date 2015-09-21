@@ -11,7 +11,7 @@ class Tracker:
         self._values = []
         return self
 
-    def setup(self, *args):
+    def setup(self, **kwargs):
         pass
 
     def use_timestep(self, timestep):
