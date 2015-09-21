@@ -2,4 +2,6 @@ from .organ import Organ
 
 #FIXME not implemented yet
 class Root(Organ):
-    pass
+    def setup(self):
+        #FIXME make it general property of all organs
+        self.initiated = False

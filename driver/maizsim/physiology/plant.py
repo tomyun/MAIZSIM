@@ -42,7 +42,7 @@ class Plant:
     def setup_structure(self):
         #TODO initiate_ear() like leaves and root
         self.ear = Ear(self)
-        self.root = None
+        self.root = Root(self)
         self.nodal_units = []
 
     def initiate_primordia(self):
@@ -59,8 +59,8 @@ class Plant:
         # This is so there is no discontinuity in root mass (relative to the carbon supplied by the plant later)
         # these are roots taht grew from the seed
 
-        if self.root is None:
-            self.root = Root(self)
+        if not self.root.initiated:
+            self.root.initiated = True
             self.root.import_carbohydrate(self.soil.total_root_weight)
 
     def initiate_leaves(self):
