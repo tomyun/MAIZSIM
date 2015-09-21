@@ -5,7 +5,7 @@
 # Intercropping canopy: Height1, Width1, LA1 for Crop1, and so on
 # Rose bent canopy: Height1=Upright canopy, Height2 = bent portion height, 10/16/02 S.Kim
 
-from numpy import pi, sin, cos, tan, radians, sqrt, array
+from numpy import pi, sin, cos, tan, radians, log, exp, sqrt, array
 from enum import Enum
 
 # abscissas
@@ -310,7 +310,7 @@ class Radiation:
 
     # Qtot: total irradiance (dir + dif) at depth L, simple empirical approach
     def irradiance_Q_tot(self, L):
-        I0_tot = self.irradiance_I0_tot(L)
+        I0_tot = self.irradiance_I0_tot
         s = self.scattering
         Kb = self.projection_ratio()
         Kd = self.diffusion_ratio()
@@ -381,7 +381,8 @@ class Radiation:
             rho_soil = self.soil_reflectivity
             s = self.scattering
             Kd = self.diffusion_ratio()
-            Q_soilm = Qsoil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
+            Q_soil = self.irradiance_Q_soil
+            Q_soilm = Q_soil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
         else:
             Q_soilm = 0
         return Q_soilm
@@ -396,7 +397,8 @@ class Radiation:
             rho_soil = self.soil_reflectivity
             s = self.scattering
             Kd = self.diffusion_ratio()
-            Q_soilm = Qsoil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
+            Q_soil = self.irradiance_Q_soil
+            Q_soilm = Q_soil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
 
             I0_dr = self.sun.directional_photosynthetic_radiation
             s = self.scattering
@@ -424,7 +426,7 @@ class Radiation:
     @property
     def irradiance_Q_soil(self):
         LAI = self.leaf_area_index
-        return self.Q_tot(LAI)
+        return self.irradiance_Q_tot(LAI)
 
     ###################
     # Leaf Area Index #
