@@ -8,7 +8,7 @@ class TasselInitiation(Stage):
     def setup(self, juvenile_leaves=15, day_length=None):
         self.juvenile_leaves = juvenile_leaves
         self.day_length = day_length
-        self._appeared_leaves = None
+        self._appeared_leaves = 0
 
     def tracker(self):
         return LeafInductionRate(
