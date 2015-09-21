@@ -117,7 +117,7 @@ class Carbon(Trait):
 
     @property
     def demand(self):
-        if self.p.pheno.grain_filling():
+        if self.p.pheno.grain_filling:
             # here only grain and root dry matter increases root should be zero but it is small now.
             max_kernel_no = 800 # assumed maximum kerner number per ear
             # max kernel filling rate = 0.012g Kernel-1 day-1, Grant (1989)
@@ -195,11 +195,11 @@ class Carbon(Trait):
         # Yg = 0.74
 
         c = np.fmax(self.supply - self.maintenance_respiration, 0)
-        if self.p.pheno.grain_filling():
+        if self.p.pheno.grain_filling:
             shoot = Yg * c # gCH2O partitioned to shoot
             root = 0 # no more partitioning to root during grain fill
         #HACK unused code
-        # elif self.p.pheno.vegetative_growing():
+        # elif self.p.pheno.vegetative_growing:
             # shootPart was reduced to 0.37; rootPart was 0.43 in sourcesafe file yy
             # SK, commenting it out. Yg needs to be multiplied here because it represents growth respiration.
             # shoot = 0.67 * c # these are the amount of carbons allocated with no drought stress
@@ -240,7 +240,7 @@ class Carbon(Trait):
     @property
     def partition_shoot(self):
         shoot = self.shoot
-        if self.p.pheno.vegetative_growing():
+        if self.p.pheno.vegetative_growing:
             return {
                 'leaf': shoot * 0.725,
                 'sheath': shoot * 0.275,
@@ -250,7 +250,7 @@ class Carbon(Trait):
                 'cob': 0,
                 'grain': 0,
             }
-        elif self.p.pheno.silking():
+        elif self.p.pheno.silking:
             def ratio(a, b, s):
                 r = a if s <= self._scale else b
                 return shoot * np.fmax(r, 0)
@@ -274,7 +274,7 @@ class Carbon(Trait):
                 'grain': 0,
             }
         #TODO: check if it should go further than grain filling until dead
-        elif self.p.pheno.grain_filling():
+        elif self.p.pheno.grain_filling:
             return {
                 'leaf': 0,
                 'sheath': 0,

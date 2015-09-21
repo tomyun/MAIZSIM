@@ -156,7 +156,7 @@ class Plant:
             #HACK setting SLA this way is not permitted in the new implementation; this was unused code anyways
             # # Update SLA based on current shoot growth rate. Do this for every leaf
             # # no sla adjustment until after emergence
-            # if self.carbon.shoot > 0 and self.pheno.emerging():
+            # if self.carbon.shoot > 0 and self.pheno.emerging:
             #     # see Grant, 1989, eq 9. 10000 converts from m2 to cm2
             #     SLA_est = 1 / (25.0 + 150.0 * self.carbon.shoot) * 10000
             #     if leaf.growing:
