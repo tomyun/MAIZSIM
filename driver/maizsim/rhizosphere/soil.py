@@ -4,6 +4,9 @@ import copy
 
 class Soil:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.time = None
         self.T_soil = None
         self.ET_supply = None
@@ -18,14 +21,16 @@ class Soil:
 
     @classmethod
     def from_2DSOIL(cls, T, W, S, N, G):
-        soil = Soil()
-        soil.time = Timer.datetime_from_julian_day(T.time)
-        soil.update_water_potential(S)
-        soil.update_root(S, N)
+        return Soil().update_from_2DSOIL(T, W, S, N, G)
+
+    def update_from_2DSOIL(self, T, W, S, N, G):
+        self.time = Timer.datetime_from_julian_day(T.time)
+        self.update_water_potential(S)
+        self.update_root(S, N)
         #FIXME handle ET_supply driectly in the driver
-        #soil.update_evapotranspiration(S)
-        soil.update_temperature(G, N)
-        return soil
+        #self.update_evapotranspiration(S)
+        self.update_temperature(G, N)
+        return self
 
     def update_water_potential(self, S):
         # since LeafWP in 2dsoil is in bar but in maizesim is in MPa,
