@@ -348,9 +348,5 @@ class Leaf(Organ):
         T = self.p.pheno.temperature
         if not self.aging:
             self._aging_tracker.update(T)
-        else:
+        elif not self.dead:
             self._senescence_tracker.update(T)
-
-            #HACK better ways to handle? e.g. signal callback?
-            if self.dead:
-                self.senescent_area = self.area
