@@ -59,7 +59,7 @@ class Plant:
         # these are roots taht grew from the seed
 
         #TODO use weather.TotalRootWeight from 2DSOIL
-        self.root.import_carbohydrate(soil.total_root_weight)
+        self.root.import_carbohydrate(self.soil.total_root_weight)
 
     def initiate_leaves(self):
         for i in range(self.pheno.leaves_initiated):
