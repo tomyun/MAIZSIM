@@ -45,11 +45,11 @@ class Photosynthesis(Trait):
         # call SetVal_NC()
 
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
-        sunlit_weather = self.weather.copy()
+        sunlit_weather = self.p.weather.copy()
         sunlit_weather.PFD = self.radiation.irradiance_Q_sunlit()
         self.sunlit.setup(sunlit_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
 
-        shaded_weather = self.weather.copy()
+        shaded_weather = self.p.weather.copy()
         shaded_weather.PFD = self.radiation.irradiance_Q_shaded()
         self.shaded.setup(shaded_weather, self.p.soil, self.p.nitrogen.leaf_content, leaf_width)
 
