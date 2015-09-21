@@ -219,7 +219,7 @@ class Radiation:
     def irradiance_l_sunlit(self, L):
         I0_dr = self.sun.directional_photosynthetic_radiation
         s = self.scattering
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         I_lb_sunlit = I0_dr * (1 - s) * Kb
         I_l_sunlit = I_lb_sunlit + self.irradiance_l_shaded(L)
         return I_l_sunlit
@@ -234,7 +234,7 @@ class Radiation:
         rho_cb = self.canopy_reflectivity_uniform_leaf()
         s = self.scattering
         Kb1 = self.projection_ratio_prime
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         I_lbs = I0_dr * ((1 - rho_cb) * Kb1 * exp(-Kb1 * L) - (1 - s) * Kb * exp(-Kb * L))
         return I_lbs
 
@@ -278,7 +278,7 @@ class Radiation:
         rho_cd = self.canopy_reflectivity_diffusion
         I0_dr = self.sun.directional_photosynthetic_radiation
         I0_df = self.sun.diffusive_photosynthetic_radiation
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         Kb1 = self.projection_ratio_prime
         Kd1 = self.diffusion_ratio_prime
         LAI = self.leaf_area_index
@@ -312,8 +312,8 @@ class Radiation:
     def irradiance_Q_tot(self, L):
         I0_tot = self.irradiance_I0_tot(L)
         s = self.scattering
-        Kb = self.projection_ratio
-        Kd = self.diffusion_ratio
+        Kb = self.projection_ratio()
+        Kd = self.diffusion_ratio()
         Q_tot = I0_tot * exp(-sqrt(1 - s) * ((Kb + Kd) / 2) * L)
         return Q_tot
 
@@ -321,7 +321,7 @@ class Radiation:
     def irradiance_Q_bt(self, L):
         I0_dr = self.sun.directional_photosynthetic_radiation
         s = self.scattering
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         Q_bt = I0_dr * exp(-sqrt(1 - s) * Kb * L)
         return Q_bt
 
@@ -329,7 +329,7 @@ class Radiation:
     def irradiance_Q_d(self, L):
         I0_df = self.sun.diffusive_photosynthetic_radiation
         s = self.scattering
-        Kd = self.diffusion_ratio
+        Kd = self.diffusion_ratio()
         Q_d = I0_df * exp(-sqrt(1 - s) * Kd * L)
         return Q_d
 
@@ -342,7 +342,7 @@ class Radiation:
             # Integral Qd / Integral L
             I0_df = self.sun.diffusive_photosynthetic_radiation
             s = self.scattering
-            Kd = self.diffusion_ratio
+            Kd = self.diffusion_ratio()
             Q_dm = I0_df * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
         else:
             Q_dm = 0
@@ -351,7 +351,7 @@ class Radiation:
     # unintercepted beam (direct beam) flux at depth of L within canopy
     def irradinace_Q_b(self, L):
         I0_dr = self.sun.directional_photosynthetic_radiation
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         Q_b = I0_dr * exp(-Kb * L)
         return Q_b
 
@@ -359,7 +359,7 @@ class Radiation:
     # flux density on sunlit leaves at delpth L
     def irradiance_Q_sunlit(self, L=None):
         I0_dr = self.sun.directional_photosynthetic_radiation
-        Kb = self.projection_ratio
+        Kb = self.projection_ratio()
         return I0_dr * Kb + self.irradiance_Q_shaded(L)
 
     # mean flux density on shaded leaves over LAI
@@ -380,7 +380,7 @@ class Radiation:
             Q_soil = self.irradiance_Q_soil
             rho_soil = self.soil_reflectivity
             s = self.scattering
-            Kd = self.diffusion_ratio
+            Kd = self.diffusion_ratio()
             Q_soilm = Qsoil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
         else:
             Q_soilm = 0
@@ -395,12 +395,12 @@ class Radiation:
             Q_soil = self.irradiance_Q_soil
             rho_soil = self.soil_reflectivity
             s = self.scattering
-            Kd = self.diffusion_ratio
+            Kd = self.diffusion_ratio()
             Q_soilm = Qsoil * rho_soil * (1 - exp(-sqrt(1 - s) * Kd * LAI)) / (sqrt(1 - s) * Kd * LAI)
 
             I0_dr = self.sun.directional_photosynthetic_radiation
             s = self.scattering
-            Kb = self.projection_ratio
+            Kb = self.projection_ratio()
 
             # total beam including scattered absorbed by canopy
             total_beam = I0_dr * (1 - exp(-sqrt(1 - s) * Kb * LAI)) / (sqrt(1 - s) * Kb)
@@ -436,7 +436,7 @@ class Radiation:
         if self.sun.elevation_angle <= 5:
             return 0
         else:
-            Kb = self.projection_ratio
+            Kb = self.projection_ratio()
             LAI = self.leaf_area_index
             return (1 - exp(-Kb * LAI)) / Kb
 
@@ -450,7 +450,7 @@ class Radiation:
         if self.sun.elevation_angle <= 5:
             return 0
         else:
-            Kb = self.projection_ratio
+            Kb = self.projection_ratio()
             return exp(-Kb * L)
 
     def shaded_fraction(self, L):
