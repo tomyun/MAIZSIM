@@ -9,7 +9,7 @@ ATM = 100 # kPa
 
 class Weather:
     def __init__(self, time, PFD, sol_rad, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
-        self.setup(time, PFD, T_air, CO2, RH, wind, P_air, day_length)
+        self.setup(time, PFD, sol_rad, T_air, CO2, RH, wind, P_air, day_length)
 
     def setup(self, time, PFD, sol_rad, T_air, CO2, RH, wind, P_air=ATM, day_length=None):
         self.time = time
