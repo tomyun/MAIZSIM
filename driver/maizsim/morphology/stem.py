@@ -6,9 +6,12 @@ class Stem(Organ):
         self.nodal_unit = nodal_unit
 
     def setup(self):
-        self.rank = self.nodal_unit.rank
         self.length = 0
         self.diameter = 0
+
+    @property
+    def rank(self):
+        return self.nodal_unit.rank
 
     def update(self):
         super().update()

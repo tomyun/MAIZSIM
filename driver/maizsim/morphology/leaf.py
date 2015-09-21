@@ -14,8 +14,6 @@ class Leaf(Organ):
         self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
 
     def setup(self):
-        self.rank = self.nodal_unit.rank
-
         #FIXME other means to store?
         self.mature_gdd = None
 
@@ -25,6 +23,10 @@ class Leaf(Organ):
     #############
     # Constants #
     #############
+
+    @property
+    def rank(self):
+        return self.nodal_unit.rank
 
     # cm dd-1 Fournier and Andrieu 1998 Pg239.
     # This is the "potential" elongation rate with no water stress Yang
