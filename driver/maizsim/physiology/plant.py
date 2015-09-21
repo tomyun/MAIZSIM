@@ -108,6 +108,7 @@ class Plant:
             #calcMaintRespiration(weather)
 
             #TODO logics clean up
+            first_leaf = self.nodal_units[0].leaf
             if not first_leaf.appeared:
                 #self.maintenance_respiration() #FIXME no side-effect
                 self.allocate_carbon()
