@@ -2,7 +2,7 @@ from .base import Stage
 from ..tracker import TemperatureTracker, GrowingDegreeDays, ReproductiveGeneralThermalIndex
 
 # Non-growth related Stage classes for tracking thermal units over entire growth period
-class TrackerStage(Stage):
+class Recorder(Stage):
     def ready(self):
         return True
 
@@ -10,16 +10,16 @@ class TrackerStage(Stage):
         self._tracker.reset()
 
 
-class GstTracker(TrackerStage):
+class GstRecorder(Recorder):
     def tracker(self):
         return TemperatureTracker()
 
 
-class GddTracker(TrackerStage):
+class GddRecorder(Recorder):
     def tracker(self):
         return GrowingDegreeDays()
 
 
-class GtiTracker(TrackerStage):
+class GtiRecorder(Recorder):
     def tracker(self):
         return ReproductiveGeneralThermalIndex()

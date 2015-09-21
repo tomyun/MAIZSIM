@@ -4,9 +4,9 @@ import numpy as np
 
 # note it's Tracker, not Accumulator
 class LeafInductionRate(Tracker):
-    def setup(self, pheno, gst_tracker, juvenile_leaves):
+    def setup(self, pheno, gst_recorder, juvenile_leaves):
         self.pheno = pheno
-        self.gst_tracker = gst_tracker
+        self.gst_recorder = gst_recorder
         self.temperature_tracker = TemperatureTracker()
         self.juvenile_leaves = juvenile_leaves
 
@@ -14,7 +14,7 @@ class LeafInductionRate(Tracker):
         #TODO implement on_first_update() interface?
         #HACK use mean temperature tracker for induction period
         if self.temperature_tracker.empty():
-            self.temperature_tracker.update(self.gst_tracker.rate)
+            self.temperature_tracker.update(self.gst_recorder.rate)
         #TODO use chained methods
         self.temperature_tracker.update(T)
         T = self.temperature_tracker.rate

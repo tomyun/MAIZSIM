@@ -17,6 +17,6 @@ class GrainFillingInitiation(Stage):
         return self.rate >= self.GDD_grain
 
     def finish(self):
-         GDD_sum = self.pheno.gdd_tracker.rate
-         T_grow = self.pheno.gst_tracker.rate
+         GDD_sum = self.pheno.gdd_recorder.rate
+         T_grow = self.pheno.gst_recorder.rate
          print("* Grain filling begins: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))

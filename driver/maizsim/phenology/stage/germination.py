@@ -17,6 +17,6 @@ class Germination(Stage):
         return self.rate >= 0.5
 
     def finish(self):
-        GDD_sum = self.pheno.gdd_tracker.rate
+        GDD_sum = self.pheno.gdd_recorder.rate
         dt = self.pheno.timestep * 24 * 60 # per min
         print("* Germinated: GDDsum = {}, time step (min) = {}".format(GDD_sum, dt))

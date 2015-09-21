@@ -9,9 +9,9 @@ class Phenology:
 
     def setup(self):
         # mean growing season temperature since germination, SK 1-19-12
-        self.gst_tracker = gstt = stage.GstTracker(self)
-        self.gdd_tracker = gddt = stage.GddTracker(self)
-        self.gti_tracker = gtit = stage.GtiTracker(self)
+        self.gst_recorder = gstr = stage.GstRecorder(self)
+        self.gdd_recorder = gddr = stage.GddRecorder(self)
+        self.gti_recorder = gtir = stage.GtiRecorder(self)
 
         self.germination = g = stage.Germination(self)
         self.emergence = e = stage.Emergence(self)
@@ -28,7 +28,7 @@ class Phenology:
         self.pti_tracker = ptit = stage.PtiTracker(self)
 
         self.stages = [
-            gstt, gddt, gtit,
+            gstr, gddr, gtir,
             g, e, li, la, ti, s, gfi, m1, m2, d,
             ptit,
         ]
@@ -80,7 +80,7 @@ class Phenology:
 
     @property
     def growing_temperature(self):
-        return self.gst_tracker.rate
+        return self.gst_recorder.rate
 
     @property
     def optimal_temperature(self):
@@ -136,7 +136,7 @@ class Phenology:
     def gdd_after_emergence(self):
         if self.emergence.over():
             #HACK tracker is reset when emergence is over
-            return self.gst_tracker.rate
+            return self.gst_recorder.rate
         else:
             return 0
 

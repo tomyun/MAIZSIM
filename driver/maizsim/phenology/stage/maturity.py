@@ -17,6 +17,6 @@ class Maturity(Stage):
         return area.green_leaf <= 0.05 * area.leaf
 
     def finish(self):
-        GDD_sum = self.pheno.gdd_tracker.rate
+        GDD_sum = self.pheno.gdd_recorder.rate
         active_leaf_percent = self.pheno.plant.area.active_leaf_ratio * 100
         print("* Physiological maturity: GDDsum = {}, Growing season T = {}, green leaf: {}%".format(GDD_sum, T_grow, active_leaf_percent))

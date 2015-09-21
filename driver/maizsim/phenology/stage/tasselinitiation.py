@@ -13,7 +13,7 @@ class TasselInitiation(Stage):
     def tracker(self):
         return LeafInductionRate(
             pheno=self.pheno, #FIXME to access weather.day_length
-            gst_tracker=self.pheno.gst_tracker,
+            gst_recorder=self.pheno.gst_recorder,
             juvenile_leaves=self.juvenile_leaves,
         )
 
@@ -51,6 +51,6 @@ class TasselInitiation(Stage):
         #HACK save the appeared leaves when tassel initiation is done
         self._appeared_leaves_on_finish = self.pheno.leaves_appeared
 
-        GDD_sum = self.pheno.gdd_tracker.rate
-        T_grow = self.pheno.gst_tracker.rate
+        GDD_sum = self.pheno.gdd_recorder.rate
+        T_grow = self.pheno.gst_recorder.rate
         print("* Tassel initiation: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))

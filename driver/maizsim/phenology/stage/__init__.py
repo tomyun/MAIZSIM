@@ -10,6 +10,6 @@ from .leafinitiation import LeafInitiation
 from .mature import Mature
 from .maturity import Maturity
 from .ptitracker import PtiTracker
+from .recorder import GstRecorder, GddRecorder, GtiRecorder
 from .silk import Silk
 from .tasselinitiation import TasselInitiation
-from .tracker import GstTracker, GddTracker, GtiTracker

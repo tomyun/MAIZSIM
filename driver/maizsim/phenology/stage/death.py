@@ -15,5 +15,5 @@ class Death(Stage):
 
     def finish(self):
         #FIXME record event?
-        GDD_sum = self.pheno.gdd_tracker.rate
+        GDD_sum = self.pheno.gdd_recorder.rate
         print("* Death: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
