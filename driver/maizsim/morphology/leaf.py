@@ -109,18 +109,20 @@ class Leaf(Organ):
         # Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
         return np.fmax(0, -5.16 + 1.94 * self.rank)
 
+    @property(self):
+    def _leaf_number_effect(self):
+        # Fig 4 of Birch et al. (1998)
+        return np.clip(np.exp(-1.17 + 0.047 * self._total_leaves_at_initiation), 0.5, 1.0)
+
     @property
     def potential_area(self):
         # daughtry and hollinger (1984) Fournier and Andrieu(1998) Pg242 YY
         maximum_area = self.potential_length * self.potential_width * self.area_ratio
 
-        # Fig 4 of Birch et al. (1998)
-        leaf_number_effect = np.clip(np.exp(-1.17 + 0.047 * self.p.pheno.leaves_total), 0.5, 1.0)
-
         # equa 6. Fournier and Andrieu(1998) multiplied by Birch et al. (1998) leaf no effect
         # LA_max the area of the largest leaf
         # PotentialArea potential final area of a leaf with rank "n". YY
-        return maximum_area * leaf_number_effect * self._rank_effect()
+        return maximum_area * self._leaf_number_effect * self._rank_effect()
 
     @property
     def green_area(self):
