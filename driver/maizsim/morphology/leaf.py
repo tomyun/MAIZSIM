@@ -14,11 +14,9 @@ class Leaf(Organ):
         self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
 
     def setup(self):
-        #FIXME other means to store?
-        self.mature_gdd = np.inf
-
         #FIXME needed?
         #self.leaf_calibrated_temperature = pheno.calibrated_tempreature()
+        pass
 
     #############
     # Constants #
@@ -322,7 +320,7 @@ class Leaf(Organ):
 
     @property
     def dropped(self):
-        return self.dead and self.physiological_age >= self.mature_gdd
+        return self.mature and self.dead
 
     ##########
     # Update #
@@ -339,10 +337,6 @@ class Leaf(Organ):
         if self.appeared and not self.mature:
             self._elongation_tracker.update(self.p.pheno.temperature)
             self._area_tracker.update(self.actual_area_increase)
-
-            #HACK better ways to handle? e.g. signal callback?
-            if self.mature:
-                self.mature_gdd = self.physiological_age
 
     def senescence(self):
         T = self.p.pheno.temperature
