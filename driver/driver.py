@@ -87,10 +87,10 @@ class Driver:
             self._run_controller()
 
             if not self.plant.pheno.germinated:
-                self._handle_not_germinated(w)
+                self._handle_not_germinated()
 
             if self.plant.pheno.emerged:
-                self._handle_emerged(w, S)
+                self._handle_emerged(S)
 
             self._handle_dead_or_not(M, T)
 
@@ -356,12 +356,16 @@ class Driver:
     ###############
     # Development #
     ###############
-    def _handle_not_germinated(self, w):
+    def _handle_not_germinated(self):
         # Assumes that germination takes place about halfway through the sowing date.
-        if 0.49 <= w.time <= 0.51:
-            print(w.jday)
+        #if 0.49 <= w.time <= 0.51:
+        #    print(w.jday)
+        timer = self.controller.timer
+        if timer.time.hour == 12:
+            #HACK need helper method?
+            print("{} ({})".format(timer.time, timer.julian_day_from_datetime(timer.time)))
 
-    def _handle_emerged(self, w, S):
+    def _handle_emerged(self, S):
         # pass appropriate data to 2DSOIL file structures
         #dt 03/14/2011- I added a pool of carbo to hold leftover carbon from root growth, here it is implemented - see also plant
         # This holds any carbon not used for root growth in the previous time step
@@ -391,8 +395,9 @@ class Driver:
         #dt 03/2011 added these two for debugging now
         #need to calculate mass balcance of carbo sent to root
         #can drop them later
-        w.pcrl = S.pcrl / self.pop_slab/24.
-        w.pcrq = S.pcrq / self.pop_slab/24.
+        #HACK no need to save them in Weather or Soil
+        #w.pcrl = S.pcrl / self.pop_slab/24.
+        #w.pcrq = S.pcrq / self.pop_slab/24.
 
         S.lcai = plant.area.green_leaf * self.initials.plant_density
         S.cover = 1 - np.exp(-0.79*S.lcai)
