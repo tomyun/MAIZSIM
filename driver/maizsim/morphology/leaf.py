@@ -7,16 +7,19 @@ class Leaf(Organ):
     def __init__(self, nodal_unit):
         super().__init__(nodal_unit.plant)
         self.nodal_unit = nodal_unit
+
+    def setup(self):
         dt = self.p.pheno.timestep
         self._elongation_tracker = BetaFunc(R_max=1.0).use_timestep(dt)
         self._area_tracker = Accumulator().use_timestep(dt)
         self._aging_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
         self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
 
-    def setup(self):
-        #FIXME needed?
-        #self.leaf_calibrated_temperature = pheno.calibrated_tempreature()
-        pass
+        # temperature at which experiments run where parameters for leaf expansion were determined
+        #self._leaf_calibrated_temperature = self.p.pheno.calibrated_tempreature
+
+        # potential growth is fixed by the number of total leaves at initiation
+        self._total_leaves_at_initiation = self.p.pheno.leaves_total
 
     #############
     # Constants #
@@ -66,7 +69,7 @@ class Leaf(Organ):
     def potential_length(self):
         LM_min = 115
         k = 24.0
-        extra_leaves = self.p.pheno.leaves_total - self.p.pheno.leaves_generic
+        extra_leaves = self._total_leaves_at_initiation - self.p.pheno.leaves_generic
         return np.sqrt(LM_min**2 + k * extra_leaves)
 
     @property
@@ -77,7 +80,7 @@ class Leaf(Organ):
     #TODO better name, shared by growth_duration and pontential_area
     def _rank_effect(self, weight=1):
         #TODO should be a plant parameter not leaf (?)
-        leaves = self.p.pheno.leaves_total
+        leaves = self._total_leaves_at_initiation
         n_m = 5.93 + 0.33 * leaves # the rank of the largest leaf. YY
         a = -10.61 + 0.25 * leaves * weight
         b = -5.99 + 0.27 * leaves * weight
