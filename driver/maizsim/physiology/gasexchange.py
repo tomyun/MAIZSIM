@@ -90,7 +90,7 @@ class Stomata:
 
         # this below is an example of how you can write temporary data to a debug window. It can be copied and
         # pasted into excel for plotting. Dennis See above where the CString object is created.
-        print("gs = %f LWP = %f Ds= %f T_leaf = %f Cs = %f A_net = %f hs = %f RH = %f" % (gs, LWP, Ds, T_leaf, Cs, A_net, hs, RH))
+        #print("gs = %f LWP = %f Ds= %f T_leaf = %f Cs = %f A_net = %f hs = %f RH = %f" % (gs, LWP, Ds, T_leaf, Cs, A_net, hs, RH))
         self.gs = gs
         return self.gs
 
@@ -316,7 +316,7 @@ class PhotosyntheticLeaf:
 
         #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
-        res = scipy.optimize.minimize(cost, [0], options={'disp': True})
+        res = scipy.optimize.minimize(cost, [0], options={'disp': False})
         self.A_net = res.x[0]
 
         #HACK ensure stomata state matches with the final A_net
@@ -376,7 +376,7 @@ class PhotosyntheticLeaf:
             T_leaf1 = self.update_temperature()
             return (T_leaf0 - T_leaf1)**2
 
-        res = scipy.optimize.minimize(cost, [self.weather.T_air], options={'disp': True})
+        res = scipy.optimize.minimize(cost, [self.weather.T_air], options={'disp': False})
         self.temperature = res.x[0]
 
         #HACK ensure leaf state matches with the final temperature
