@@ -192,7 +192,7 @@ class Sun:
 
     @property
     def optical_air_mass_number(self):
-        t_s = radians(self.elevation_angle)
+        t_s = fmax(0, radians(self.elevation_angle))
         #FIXME need to do np.fmax(0.0001, sin(t_s))?
         return self.atmospheric_pressure / (101.3 * sin(t_s))
 
