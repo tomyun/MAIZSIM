@@ -41,6 +41,12 @@ class Tracker:
         return len(self._values) * self.timestep
 
 
+class TemperatureTracker(Tracker):
+    def use_timestep(self, timestep):
+        #HACK temperature trackers always have timestep of 1
+        return super().use_timestep(1)
+
+
 class Accumulator(Tracker):
     @property
     def rate(self):
