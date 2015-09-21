@@ -87,7 +87,7 @@ class Leaf(Organ):
 
         # equa 8(b)(Actually eqn 6? - eqn 8 deals with leaf age - DT)
         # in Fournier and Andrieu(1998). YY
-        scale = rank / n_m - 1
+        scale = self.rank / n_m - 1
         return np.exp(a * scale**2 + b * scale**3)
 
 
