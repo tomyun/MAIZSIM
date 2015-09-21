@@ -141,14 +141,14 @@ class Carbon(Trait):
             # CADD from Grant
             self.supply = self.pool * translocation_rate
             # C_Pool is what is left over from the carbon available for growth
-            self.consume_pool(supply)
+            self.consume_pool(self.supply)
         elif self.pool == 0: # np.abs(self.pool) < 0.0001:
             if self.reserve > 0:
                 # all the reserve is not available
                 #FIXME why translocation from the reserve has the same rate?
                 self.supply = self.reserve * translocation_rate
                 # reduce reserve pool for used carbon
-                self.consume_reserve(supply)
+                self.consume_reserve(self.supply)
             else:
                 #TODO what would happen if no reserve available?
                 pass
@@ -162,7 +162,7 @@ class Carbon(Trait):
             # deplete C_pool first* tmprEffect
             #FIXME why supply size depends on the total demand unlike other cases?
             self.supply = self.demand * translocation_rate
-            self.consume_reserve(supply) # reserve C is used to increase grain mass
+            self.consume_reserve(self.supply) # reserve C is used to increase grain mass
             #FIXME isn't it duplicate of negative pool handling right above?
             # send remaining C (not enough to meet the demand) in shorterm pool to reserve
             # empty the C_pool
