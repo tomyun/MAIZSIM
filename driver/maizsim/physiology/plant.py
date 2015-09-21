@@ -88,8 +88,7 @@ class Plant:
         self.weather = weather
         self.soil = soil
 
-        #TODO pass weather as is?
-        self.pheno.update(weather.T_air)
+        self.pheno.update()
 
         if self.pheno.germinating:
             #TODO temperature setting?

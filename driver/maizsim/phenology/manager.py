@@ -39,9 +39,9 @@ class Phenology:
     def _queue(self):
         return [s for s in self.stages if s.ready() and not s.over()]
 
-    def update(self, T):
+    def update(self):
         queue = self._queue()
-
+        T = self.temperature
         [s.update(T) for s in queue]
         [s.post_update() for s in queue]
 
@@ -73,10 +73,14 @@ class Phenology:
     def leaves_appeared(self):
         return self.leaf_appearance.leaves
 
-    #TODO is it relevant here?
     @property
     def temperature(self):
-        return self.plant.weather.T_air
+        if self.leaves_appeared < 9:
+            T = self.plant.soil.T_soil
+        else:
+            T = self.plant.weather.T_air
+        #FIXME T_cur doesn't go below zero, but is it fair assumption?
+        return T if T > 0 else 0
 
     @property
     def growing_temperature(self):
