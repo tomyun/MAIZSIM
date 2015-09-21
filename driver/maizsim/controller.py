@@ -50,11 +50,11 @@ class Controller:
         if self.time.daily_output == 1 and weather.time.hour == 6:
             self.update_crop_output(weather, soil)
             if self.plant.pheno.germinated:
-                self.update_leaf_output()
+                self.update_leaf_output(weather, soil)
         elif self.time.hourly_output == 1:
             self.update_crop_output(weather, soil)
             if self.plant.pheno.germinated:
-                self.update_leaf_output()
+                self.update_leaf_output(weather, soil)
 
         # update timer step forward
         self.timer.tick()
