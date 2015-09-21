@@ -7,13 +7,13 @@ class Organ:
         self._tracker = GrowingDegreeDays(T_base=8.0, T_opt=None, T_max=43.3).use_timestep(plant.pheno.timestep)
 
         # organ temperature, C
-        self.temperature = 25.0
+        self._temperature = 25.0
 
         # glucose, MW = 180.18 / 6 = 30.03 g
-        self.carbohydrate = 0
+        self._carbohydrate = 0
 
         # nitrogen content, mg
-        self.nitrogen = 0
+        self._nitrogen = 0
 
         self.setup()
 
@@ -34,13 +34,13 @@ class Organ:
     @property
     def mass(self):
         #FIXME isn't it just the amount of carbohydrate?
-        #return self.carbohydrate / Weight.CH2O * Weight.C / Weight.C_to_CH2O_ratio
-        return self.carbohydrate
+        #return self._carbohydrate / Weight.CH2O * Weight.C / Weight.C_to_CH2O_ratio
+        return self._carbohydrate
 
     #TODO remove set_mass() and directly access carbohydrate
     def set_mass(self, mass):
-        #self.carbohydrate = mass * Weight.C_to_CH2O_ratio / Weight.C * Weight.CH2O
-        self.carbohydrate = mass
+        #self._carbohydrate = mass * Weight.C_to_CH2O_ratio / Weight.C * Weight.CH2O
+        self._carbohydrate = mass
 
     # physiological days to reach the end of growth (both cell division and expansion) at optimal temperature, days
     @property
@@ -66,22 +66,22 @@ class Organ:
         return 0
 
     def _update(self, T):
-        self.temperature = T
+        self._temperature = T
         self._tracker.update(T)
 
     def update(self):
         self._update(self.p.pheno.temperature)
 
     def import_carbohydrate(self, amount):
-        self.carbohydrate += amount
+        self._carbohydrate += amount
 
     def import_nitrogen(self, amount):
-        self.nitrogen += amount
+        self._nitrogen += amount
 
     def respire(self):
         # this needs to be worked on
         # currently not used at all
         Ka = 0.1 # growth respiration
         Rm = 0.02 # maintenance respiration
-        #self.carbohydrate -= (Ka + Rm) * self.carbohydrate
-        self.carbohydrate *= 1 - (Ka + Rm)
+        #self._carbohydrate -= (Ka + Rm) * self._carbohydrate
+        self._carbohydrate *= 1 - (Ka + Rm)
