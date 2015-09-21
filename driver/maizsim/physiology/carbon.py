@@ -48,7 +48,9 @@ class Carbon(Trait):
 
     def update_root_pool_with_residual(self):
         #TODO need output from 2DSOIL
-        self.root_pool += self.p.soil.pcrl - self.p.soil.pcrs
+        pcrl = self.p.soil.min_root_carbon_supply_rate
+        pcrs = self.p.soil.actual_root_carbon_supply_rate
+        self.root_pool += pcrl - pcrs
 
     @property
     def _content(self):
@@ -133,7 +135,7 @@ class Carbon(Trait):
         maintenance_respiration = self.maintenance_respiration
 
         #HACK handle residual root carbon from 2DSOIL here, not in partition()
-        self.update_root_pool_with_root()
+        self.update_root_pool_with_residual()
 
         if self.pool > self.demand:
             # CADD from Grant
