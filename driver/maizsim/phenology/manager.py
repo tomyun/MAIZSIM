@@ -113,7 +113,9 @@ class Phenology:
 
     @property
     def vegetative_growing(self):
-        return self.germinated and not self.tassel_initiated
+        #HACK there would be a missing period right after tassel initiation and before silking, waiting for full leaf appearance
+        #return self.germinated and not self.tassel_initiated
+        return not self.silking
 
     @property
     def silking(self):
