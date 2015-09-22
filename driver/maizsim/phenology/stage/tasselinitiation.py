@@ -1,5 +1,6 @@
 from .base import Stage
 from ..tracker import LeafInductionRate
+from .recorder import GstRecorder
 
 import numpy as np
 
@@ -14,6 +15,7 @@ class TasselInitiation(Stage):
         return LeafInductionRate(
             pheno=self.pheno, #FIXME to access weather.day_length
             gst_recorder=self.pheno.gst_recorder,
+            temperature_recorder=GstRecorder(self.pheno),
             juvenile_leaves=self.juvenile_leaves,
         )
 
@@ -36,7 +38,7 @@ class TasselInitiation(Stage):
     #FIXME is it really needed?
     @property
     def appeared_leaves_on_finish(self):
-        return self._appeared_leaves
+        return self._appeared_leaves_on_finish
 
     def ready(self):
         #HACK should be negative when not ready
@@ -47,7 +49,7 @@ class TasselInitiation(Stage):
 
     def finish(self):
         #TODO clean up leaf count variables
-        self.current_leaf = self.youngest_leaf = self.total_leaves = self.initiated_leaves
+        self.current_leaf = self.youngest_leaf = self.total_leaves = self.pheno.leaves_initiated
         #HACK save the appeared leaves when tassel initiation is done
         self._appeared_leaves_on_finish = self.pheno.leaves_appeared
 

@@ -1,23 +1,23 @@
-from .base import Tracker, TemperatureTracker
+from .base import Tracker
 
 import numpy as np
 
 # note it's Tracker, not Accumulator
 class LeafInductionRate(Tracker):
-    def setup(self, pheno, gst_recorder, juvenile_leaves):
+    def setup(self, pheno, gst_recorder, temperature_recorder, juvenile_leaves):
         self.pheno = pheno
         self.gst_recorder = gst_recorder
-        self.temperature_tracker = TemperatureTracker()
+        self.temperature_recorder = temperature_recorder
         self.juvenile_leaves = juvenile_leaves
 
     def calc(self, T):
         #TODO implement on_first_update() interface?
         #HACK use mean temperature tracker for induction period
-        if self.temperature_tracker.empty():
-            self.temperature_tracker.update(self.gst_recorder.rate)
+        if self.temperature_recorder._tracker.empty():
+            self.temperature_recorder.update(self.gst_recorder.rate)
         #TODO use chained methods
-        self.temperature_tracker.update(T)
-        T = self.temperature_tracker.rate
+        self.temperature_recorder.update(T)
+        T = self.temperature_recorder.rate
 
         # effect of photoperiod and temperature on leaf no. used as Grant (1989)
         # Added back the temperature effect on leaf number and revised the algorithm to accumulate addLeafNo to totLeafNo.
