@@ -18,9 +18,15 @@ class Timer:
         return cls.from_datetime(time, step)
 
     @staticmethod
+    def round_datetime(time):
+        return (time + datetime.timedelta(seconds=0.5)).replace(microsecond=0)
+
+    @staticmethod
     def datetime_from_julian_day(jday, jhour=0):
         d = (jday + jhour) + (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
-        return datetime.datetime.utcfromtimestamp(d * (24 * 60 * 60))
+        #HACK prevent degenerate timestamps due to precision loss
+        time = datetime.datetime.utcfromtimestamp(d * (24 * 60 * 60))
+        return Timer.round_datetime(time)
 
     @staticmethod
     def julian_day_from_datetime(time, hourly=False):
