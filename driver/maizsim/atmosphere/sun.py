@@ -86,10 +86,10 @@ class Sun:
     def longitude_correction(self):
         # standard meridian for pacific time zone is 120 W, Eastern Time zone : 75W
         # LC is positive if local meridian is east of standard meridian, i.e., 76E is east of 75E
-        standard_meridian = 120
-        #FIXME shouldn't it be negative for West?
-        #HACK assume we're on the west
-        return -(self.longitude - standard_meridian) / (360 / 24)
+        #standard_meridian = -120
+        degree_per_hour = 360 / 24
+        meridian = round(self.longitude / degree_per_hour) * degree_per_hour
+        return (self.longitude - meridian) / degree_per_hour
 
     @property
     def solar_noon(self):
