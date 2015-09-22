@@ -136,7 +136,7 @@ class Leaf(Organ):
         #TODO implement Parent and Tardieu (2011, 2012) approach for leaf elongation in response to T and VPD, and normalized at 20C, SK, Nov 2012
         # elongAge indicates where it is now along the elongation stage or duration.
         # duration is determined by totallengh/maxElongRate which gives the shortest duration to reach full elongation in the unit of days.
-        return np.fmin(self.growth_duration / 2, self._elongation_tracker.rate)
+        return np.fmin(self._elongation_tracker.rate, self.growth_duration)
 
     def _temperature_effect(self):
         # T_peak is the optimal growth temperature at which the potential leaf size determined in calc_mophology achieved.
