@@ -3,6 +3,7 @@ from ..morphology import Ear, Root, NodalUnit
 from .mass import Mass
 from .area import Area
 from .count import Count
+from .ratio import Ratio
 from .carbon import Carbon
 from .nitrogen import Nitrogen
 from .water import Water
@@ -34,6 +35,7 @@ class Plant:
         self.mass = Mass(self)
         self.area = Area(self)
         self.count = Count(self)
+        self.ratio = Ratio(self)
         self.carbon = Carbon(self)
         self.nitrogen = Nitrogen(self)
         self.water = Water(self)
