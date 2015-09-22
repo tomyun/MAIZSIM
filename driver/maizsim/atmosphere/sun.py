@@ -92,13 +92,15 @@ class Sun:
         return (self.longitude - meridian) / degree_per_hour
 
     @property
+    def equation_of_time(self):
+        f = radians(279.575 + 0.9856*self.day)
+        return (-104.7*sin(f) + 596.2*sin(2*f) + 4.3*sin(3*f) - 12.7*sin(4*f) \
+                -429.3*cos(f) - 2.0*cos(2*f) + 19.3*cos(3*f)) / (60 * 60)
+
+    @property
     def solar_noon(self):
         LC = self.longitude_correction
-        # epsilon?: convert degrees to radians
-        f = radians(279.575 + 0.9856*self.day)
-        # calculating Equation of Time
-        ET = (-104.7*sin(f) + 596.2*sin(2*f) + 4.3*sin(3*f) - 12.7*sin(4*f) \
-              -429.3*cos(f) - 2.0*cos(2*f) + 19.3*cos(3*f)) / (60 * 60)
+        ET = self.equation_of_time
         return 12 - LC - ET
 
     def _cos_hour_angle(self, zenith_angle):
