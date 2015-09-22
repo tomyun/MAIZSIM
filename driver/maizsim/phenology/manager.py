@@ -56,10 +56,11 @@ class Phenology:
     # Accessor #
     ############
 
-    #FIXME same as leaves_initiated
+    #HACK used to be leaves_total, but renamed to avoid confusion
+    #HACK same as leaves_generic
     @property
-    def leaves_total(self):
-        return self.leaf_initiation.leaves
+    def leaves_potential(self):
+        return self.plant.variety.generic_leaf_number
 
     @property
     def leaves_generic(self):

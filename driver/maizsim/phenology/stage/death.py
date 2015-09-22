@@ -11,7 +11,8 @@ class Death(Stage):
 
     def over(self):
         #HACK access pheno and plant from stage...
-        return self.pheno.plant.count.total_dropped_leaves >= self.pheno.leaves_total
+        #HACK used to be compared against leaves_total (generic), but changed
+        return self.pheno.plant.count.total_dropped_leaves >= self.pheno.leaves_initiated
 
     def finish(self):
         #FIXME record event?

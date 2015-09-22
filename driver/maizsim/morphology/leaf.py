@@ -18,8 +18,9 @@ class Leaf(Organ):
         # temperature at which experiments run where parameters for leaf expansion were determined
         #self._leaf_calibrated_temperature = self.p.pheno.calibrated_tempreature
 
+        #FIXME the original code actually doesn't do this, always use the generic leaf number
         # potential growth is fixed by the number of total leaves at initiation
-        self._total_leaves_at_initiation = self.p.pheno.leaves_total
+        #self._total_leaves_at_initiation = self.p.pheno.leaves_total
 
     #############
     # Constants #
@@ -69,7 +70,8 @@ class Leaf(Organ):
     def potential_length(self):
         LM_min = 115
         k = 24.0
-        extra_leaves = self._total_leaves_at_initiation - self.p.pheno.leaves_generic
+        #FIXME used to leaves_total, not potential
+        extra_leaves = self.p.pheno.leaves_potential - self.p.pheno.leaves_generic
         return np.sqrt(LM_min**2 + k * extra_leaves)
 
     @property
@@ -80,7 +82,8 @@ class Leaf(Organ):
     #TODO better name, shared by growth_duration and pontential_area
     def _rank_effect(self, weight=1):
         #TODO should be a plant parameter not leaf (?)
-        leaves = self._total_leaves_at_initiation
+        #FIXME used to be leaves_total
+        leaves = self.p.pheno.leaves_potential
         n_m = 5.93 + 0.33 * leaves # the rank of the largest leaf. YY
         a = (-10.61 + 0.25 * leaves) * weight
         b = (-5.99 + 0.27 * leaves) * weight
@@ -115,7 +118,8 @@ class Leaf(Organ):
     @property
     def _leaf_number_effect(self):
         # Fig 4 of Birch et al. (1998)
-        return np.clip(np.exp(-1.17 + 0.047 * self._total_leaves_at_initiation), 0.5, 1.0)
+        #FIXME used to leaves_total, not potential
+        return np.clip(np.exp(-1.17 + 0.047 * self.p.pheno.leaves_potential), 0.5, 1.0)
 
     @property
     def potential_area(self):
