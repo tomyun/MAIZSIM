@@ -153,7 +153,8 @@ class Sun:
         h = radians(self.hour_angle)
         p = radians(self.latitude)
         d = radians(self.declination_angle)
-        return arcsin(cos(h) * cos(d) * cos(p) + sin(d) * sin(p))
+        r = arcsin(cos(h) * cos(d) * cos(p) + sin(d) * sin(p))
+        return degrees(r)
 
     @property
     def zenith_angle(self):
