@@ -262,7 +262,7 @@ class Carbon(Trait):
             husk = ratio(np.exp(-7.75 + 6.6*s), 1 - 0.675*s, 1.0)
             cob = ratio(-8.4 + 7.0*s, 0.625, 1.125)
             # give reserve part what is left over, right now it is too high
-            reserve = np.fmax(shoot - (leaf + sheah + stalk + husk + cob), 0)
+            reserve = np.fmax(shoot - (leaf + sheath + stalk + husk + cob), 0)
             # allocate shootPart into components
             return {
                 'leaf': leaf,
