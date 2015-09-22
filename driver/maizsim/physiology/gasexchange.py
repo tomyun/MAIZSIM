@@ -160,7 +160,13 @@ class Photosynthesis:
     def _temperature_dependence_rate(self, Ea, T, Tb=25.):
         R = 8.314 # universal gas constant (J K-1 mol-1)
         K = 273.
-        return np.exp(Ea * (T - Tb) / ((Tb + K) * R * (T + K)))
+        #HACK handle too low temperature values during optimization
+        Tk = np.fmax(0, T + K)
+        Tbk = np.fmax(0, Tb + K)
+        try:
+            return np.exp(Ea * (T - Tb) / (Tbk * R * Tk))
+        except ZeroDivisionError:
+            return 0
 
     def _nitrogen_limited_rate(self, N):
         # in Sinclair and Horie, 1989 Crop sciences, it is 4 and 0.2
