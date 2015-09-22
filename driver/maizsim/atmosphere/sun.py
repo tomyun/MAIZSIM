@@ -158,8 +158,7 @@ class Sun:
 
     @property
     def zenith_angle(self):
-        #FIXME need abs()?
-        return abs(90 - self.elevation_angle)
+        return 90 - self.elevation_angle
 
     # The solar azimuth angle is the angular distance between due South and the
     # projection of the line of sight to the sun on the ground.
