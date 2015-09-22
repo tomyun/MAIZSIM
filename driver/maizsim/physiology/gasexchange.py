@@ -184,10 +184,11 @@ class Photosynthesis:
         Sj = self.Sj
         Hj = self.Hj
 
-        return self.Jm25 * self._nitrogen_limited_rate(N) \
-                         * self._temperature_dependence_rate(self.Eaj, T) \
-                         * (1 + np.exp((Sj*Tbk - Hj) / (R*Tbk))) \
-                         / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
+        r = self.Jm25 * self._nitrogen_limited_rate(N) \
+                      * self._temperature_dependence_rate(self.Eaj, T) \
+                      * (1 + np.exp((Sj*Tbk - Hj) / (R*Tbk))) \
+                      / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
+        return np.fmax(0, r)
 
     def photosynthesize_c4(self, I2, Cm, T_leaf):
         O = 210. # gas units are mbar
