@@ -82,8 +82,8 @@ class Leaf(Organ):
         #TODO should be a plant parameter not leaf (?)
         leaves = self._total_leaves_at_initiation
         n_m = 5.93 + 0.33 * leaves # the rank of the largest leaf. YY
-        a = -10.61 + 0.25 * leaves * weight
-        b = -5.99 + 0.27 * leaves * weight
+        a = (-10.61 + 0.25 * leaves) * weight
+        b = (-5.99 + 0.27 * leaves) * weight
         # equation 7 in Fournier and Andrieu (1998). YY
 
         # equa 8(b)(Actually eqn 6? - eqn 8 deals with leaf age - DT)
