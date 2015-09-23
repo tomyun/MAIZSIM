@@ -1,4 +1,5 @@
 import numpy as np
+from functools import lru_cache
 
 #HACK assumes fixed timestep (probably hourly)
 #TODO support dynamic timestep? ever needed?
@@ -36,9 +37,13 @@ class Tracker:
     def empty(self):
         return self.count == 0
 
+    @lru_cache()
+    def _rate(self, n):
+        return np.mean(self._values)
+
     @property
     def rate(self):
-        return np.mean(self._values)
+        return self._rate(self.count)
 
     @property
     def period(self):
@@ -52,6 +57,6 @@ class TemperatureTracker(Tracker):
 
 
 class Accumulator(Tracker):
-    @property
-    def rate(self):
+    @lru_cache()
+    def _rate(self, n):
         return np.sum(self._values)
