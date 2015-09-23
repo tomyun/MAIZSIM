@@ -191,10 +191,13 @@ class Leaf(Organ):
         t = self.elongation_age
         t_e = self.growth_duration
         t = np.fmin(t, t_e)
+        #HACK can be more simplified
+        #a = 1.5 / t_e
+        #b = 4 * t * (t_e - t) / t_e**2
+        #return a * b
         t_m = t_e / 2
         a = (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
         b = np.fmax(0, (t_e - t) / (t_e - t_m) * (t / t_m)**(t_m / (t_e - t_m)))
-        #TODO reduce np.fmax()?
         return np.fmax(0, a * b)
 
     @property
