@@ -152,8 +152,12 @@ class Leaf(Organ):
         return maximum_area * self.leaf_number_effect * self.rank_effect()
 
     @property
+    def green_ratio(self):
+        return 1 - self.senescence_ratio
+
+    @property
     def green_area(self):
-        return np.fmax(0, self.area - self.senescent_area)
+        return self.green_ratio * self.area
 
     @property
     def elongation_age(self):
@@ -342,7 +346,7 @@ class Leaf(Organ):
 
     @property
     def mature(self):
-        return self.area >= self.potential_area or self.elongation_age >= self.growth_duration
+        return self.elongation_age >= self.growth_duration or self.area >= self.potential_area
 
     @property
     def aging(self):
@@ -350,7 +354,9 @@ class Leaf(Organ):
 
     @property
     def dead(self):
-        return self.senescent_area >= self.area #or self.senescence_age >= self.senescence_duration
+        #return self.senescent_area >= self.area
+        return self.senescence_ratio >= 1
+        #return self.senescence_age >= self.senescence_duration?
 
     @property
     def dropped(self):
