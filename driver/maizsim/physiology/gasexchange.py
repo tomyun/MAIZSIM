@@ -353,7 +353,7 @@ class PhotosyntheticLeaf:
 
         #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
-        res = scipy.optimize.minimize(cost, [0], options={'disp': False})
+        res = scipy.optimize.minimize(cost, [self.A_net], options={'disp': False})
         self.A_net = res.x[0]
 
         #HACK ensure stomata state matches with the final A_net
