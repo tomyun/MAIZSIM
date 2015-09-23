@@ -29,8 +29,12 @@ class Tracker:
         self._values.append(self.calc(T) * self.timestep)
         return self
 
+    @property
+    def count(self):
+        return len(self._values)
+
     def empty(self):
-        return len(self._values) == 0
+        return self.count == 0
 
     @property
     def rate(self):
@@ -38,7 +42,7 @@ class Tracker:
 
     @property
     def period(self):
-        return len(self._values) * self.timestep
+        return self.count * self.timestep
 
 
 class TemperatureTracker(Tracker):
