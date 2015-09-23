@@ -164,7 +164,9 @@ class Leaf(Organ):
         #TODO implement Parent and Tardieu (2011, 2012) approach for leaf elongation in response to T and VPD, and normalized at 20C, SK, Nov 2012
         # elongAge indicates where it is now along the elongation stage or duration.
         # duration is determined by totallengh/maxElongRate which gives the shortest duration to reach full elongation in the unit of days.
-        return np.fmin(self._elongation_tracker.rate, self.growth_duration)
+        #FIXME no need to check here, as it will be compared against duration later anyways
+        #return np.fmin(self._elongation_tracker.rate, self.growth_duration)
+        return self._elongation_tracker.rate
 
     @lru_cache()
     def _temperature_effect(self, T_grow, T_peak=18.7, T_base=8.0):
@@ -188,6 +190,7 @@ class Leaf(Organ):
     def elongation_rate(self):
         t = self.elongation_age
         t_e = self.growth_duration
+        t = np.fmin(t, t_e)
         t_m = t_e / 2
         a = (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
         b = np.fmax(0, (t_e - t) / (t_e - t_m) * (t / t_m)**(t_m / (t_e - t_m)))
@@ -275,7 +278,9 @@ class Leaf(Organ):
         # Assumes physiological time for senescence is the same as that for growth though this may be adjusted by stayGreen trait
         # a peaked fn like beta fn not used here because aging should accelerate with increasing T not slowing down at very high T like growth,
         # instead a q10 fn normalized to be 1 at T_opt is used, this means above Top aging accelerates.
-        return np.fmin(self._aging_tracker.rate, self.stay_green_duration)
+        #FIXME no need to check here, as it will be compared against duration later anyways
+        #return np.fmin(self._aging_tracker.rate, self.stay_green_duration)
+        return self._aging_tracker.rate
 
     @property
     def senescence_duration(self):
@@ -289,7 +294,9 @@ class Leaf(Organ):
 
     @property
     def senescence_age(self):
-        return np.fmin(self._senescence_tracker.rate, self.senescence_duration)
+        #FIXME no need to check here, as it will be compared against duration later anyways
+        #return np.fmin(self._senescence_tracker.rate, self.senescence_duration)
+        return self._senescence_tracker.rate
 
     @property
     #TODO confirm if it really means the senescence ratio, not rate
