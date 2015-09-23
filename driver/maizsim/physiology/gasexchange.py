@@ -301,8 +301,13 @@ class PhotosyntheticLeaf:
         # soil
         self.ET_supply = ET_supply
 
+        #TODO better management of output variables
         # dynamic properties
         self.temperature = None
+        self.A_net = 0
+        self.Rd =0
+        self.A_gross = 0
+        self.Ci = 0
 
         self.stomata = Stomata(width)
         self.stomata.update(weather, water, A_net=0.)
