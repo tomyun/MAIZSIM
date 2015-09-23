@@ -2,6 +2,7 @@ from .organ import Organ
 from ..phenology.tracker import Accumulator, BetaFunc, Q10Func
 
 import numpy as np
+from functools import lru_cache
 
 class Leaf(Organ):
     def __init__(self, nodal_unit):
@@ -67,12 +68,19 @@ class Leaf(Organ):
     #############
 
     @property
-    def potential_length(self):
+    def _extra_leaves(self):
+        #FIXME used to leaves_total, not potential
+        return self.p.pheno.leaves_potential - self.p.pheno.leaves_generic
+
+    @lru_cache()
+    def _potential_length(self, extra_leaves):
         LM_min = 115
         k = 24.0
-        #FIXME used to leaves_total, not potential
-        extra_leaves = self.p.pheno.leaves_potential - self.p.pheno.leaves_generic
         return np.sqrt(LM_min**2 + k * extra_leaves)
+
+    @property
+    def potential_length(self):
+        return self._potential_length(self._extra_leaves)
 
     @property
     def potential_width(self):
@@ -80,10 +88,8 @@ class Leaf(Organ):
         return self.potential_length * self.width_to_length_ratio
 
     #TODO better name, shared by growth_duration and pontential_area
-    def _rank_effect(self, weight=1):
-        #TODO should be a plant parameter not leaf (?)
-        #FIXME used to be leaves_total
-        leaves = self.p.pheno.leaves_potential
+    @lru_cache()
+    def _rank_effect(self, rank, leaves, weight):
         n_m = 5.93 + 0.33 * leaves # the rank of the largest leaf. YY
         a = (-10.61 + 0.25 * leaves) * weight
         b = (-5.99 + 0.27 * leaves) * weight
@@ -91,9 +97,13 @@ class Leaf(Organ):
 
         # equa 8(b)(Actually eqn 6? - eqn 8 deals with leaf age - DT)
         # in Fournier and Andrieu(1998). YY
-        scale = self.rank / n_m - 1
+        scale = rank / n_m - 1
         return np.exp(a * scale**2 + b * scale**3)
 
+    def rank_effect(self, weight=1):
+        #TODO should be a plant parameter not leaf (?)
+        #FIXME leaves_potential used to be leaves_total
+        return self._rank_effect(self.rank, self.p.pheno.leaves_potential, weight)
 
     # from CLeaf::calc_dimensions()
     # LM_min is a length characteristic of the longest leaf,in Fournier and Andrieu 1998, it was 90 cm
@@ -107,7 +117,7 @@ class Leaf(Organ):
     @property
     def growth_duration(self):
         # shortest possible linear phase duration in physiological time (days instead of GDD) modified
-        return self.potential_length * self._rank_effect(weight=0.5) / self.maximum_elongation_rate
+        return self.potential_length * self.rank_effect(weight=0.5) / self.maximum_elongation_rate
 
     @property
     def phase1_delay(self):
@@ -115,11 +125,15 @@ class Leaf(Organ):
         # Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
         return np.fmax(0, -5.16 + 1.94 * self.rank)
 
-    @property
-    def _leaf_number_effect(self):
+    @lru_cache()
+    def _leaf_number_effect(self, leaves):
         # Fig 4 of Birch et al. (1998)
+        return np.clip(np.exp(-1.17 + 0.047 * leaves), 0.5, 1.0)
+
+    @property
+    def leaf_number_effect(self):
         #FIXME used to leaves_total, not potential
-        return np.clip(np.exp(-1.17 + 0.047 * self.p.pheno.leaves_potential), 0.5, 1.0)
+        return self._leaf_number_effect(self.p.pheno.leaves_potential)
 
     @property
     def potential_area(self):
@@ -129,7 +143,7 @@ class Leaf(Organ):
         # equa 6. Fournier and Andrieu(1998) multiplied by Birch et al. (1998) leaf no effect
         # LA_max the area of the largest leaf
         # PotentialArea potential final area of a leaf with rank "n". YY
-        return maximum_area * self._leaf_number_effect * self._rank_effect()
+        return maximum_area * self.leaf_number_effect * self.rank_effect()
 
     @property
     def green_area(self):
@@ -142,21 +156,22 @@ class Leaf(Organ):
         # duration is determined by totallengh/maxElongRate which gives the shortest duration to reach full elongation in the unit of days.
         return np.fmin(self._elongation_tracker.rate, self.growth_duration)
 
-    def _temperature_effect(self):
+    @lru_cache()
+    def _temperature_effect(self, T_grow, T_peak=18.7, T_base=8.0):
         # T_peak is the optimal growth temperature at which the potential leaf size determined in calc_mophology achieved.
         # Similar concept to fig 3 of Fournier and Andreiu (1998)
-        T_peak = 18.7
-        T_base = 8.0
 
         # phyllochron corresponds to PHY in Lizaso (2003)
         # phyllochron needed for next leaf appearance in degree days (GDD8) - 08/16/11, SK.
         #phyllochron = (dv->get_T_Opt()- Tb)/(dv->get_Rmax_LTAR());
 
-        T_grow = self.p.pheno.growing_temperature
         T_ratio = (T_grow - T_base) / (T_peak - T_base)
         # final leaf size is adjusted by growth temperature determining cell size during elongation
         return np.fmax(0, T_ratio * np.exp(1 - T_ratio))
 
+    @property
+    def temperature_effect(self):
+        return self._temperature_effect(T_grow=self.p.pheno.growing_temperature)
 
     #TODO confirm if it really means the elongation rate
     @property
@@ -178,13 +193,14 @@ class Leaf(Organ):
         #maximum_expansion_rate = T_effect * self.potential_area * (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
         # potential leaf area increase without any limitations
         #return np.fmax(0, maximum_expansion_rate * np.fmax(0, (t_e - self.elongation_age) / (t_e - t_m) * (self.elongation_age / t_m)**(t_m / (t_e - t_m))) * timestep)
-        return self._temperature_effect() * self.elongation_rate * timestep * self.potential_area
+        return self.temperature_effect * self.elongation_rate * timestep * self.potential_area
 
     # create a function which simulates the reducing in leaf expansion rate
     # when predawn leaf water potential decreases. Parameterization of rf_psil
     # and rf_sensitivity are done with the data from Boyer (1970) and Tanguilig et al (1987) YY
-    def _water_potential_effect(self, threshold):
-        psi_predawn = self.p.soil.WP_leaf_predawn
+    @lru_cache()
+    def _water_potential_effect(self, psi_predawn, threshold):
+        #psi_predawn = self.p.soil.WP_leaf_predawn
         psi_th = threshold # threshold wp below which stress effect shows up
 
         # DT Oct 10, 2012 changed this so it was not as sensitive to stress near -0.5 lwp
@@ -194,10 +210,13 @@ class Leaf(Organ):
         psi_f = -1.4251 # -1.0
         return np.fmin(1.0, (1 + np.exp(s_f * psi_f)) / (1 + np.exp(s_f * (psi_f - (psi_predawn - psi_th)))))
 
+    def water_potential_effect(self, threshold):
+        return self._water_potential_effect(self.p.soil.WP_leaf_predawn, threshold)
+
     @property
     def actual_area_increase(self):
         # See Kim et al. (2012) Agro J. for more information on how this relationship has been derermined basned on multiple studies and is applicable across environments
-        water_effect = self._water_potential_effect(-0.8657)
+        water_effect = self.water_potential_effect(-0.8657)
 
         # place holder
         carbon_effect = 1.0
@@ -219,7 +238,7 @@ class Leaf(Organ):
         # This assumes 0.25mg/m2 minimum N required, and below this the value is 0.0.
         # threshold predawn leaf water potential (in bars) below which water stress triggers senescence, needs to be substantiated with lit or exp evidence, SK
         # This is the water potential at which considerable reduction in leaf growth takes place in corn, sunflower, and soybean in Boyear (1970)
-        water_effect = self._water_potential_effect(-4.0)
+        water_effect = self.water_potential_effect(-4.0)
         # scale for reduction in leaf lifespan and aging rate
         timestep = self._elongation_tracker.timestep
         return scale * (1 - water_effect) * timestep
