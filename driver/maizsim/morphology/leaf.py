@@ -68,6 +68,7 @@ class Leaf(Organ):
     #############
 
     @property
+    @lru_cache()
     def _extra_leaves(self):
         #FIXME used to leaves_total, not potential
         return self.p.pheno.leaves_potential - self.p.pheno.leaves_generic
@@ -79,10 +80,12 @@ class Leaf(Organ):
         return np.sqrt(LM_min**2 + k * extra_leaves)
 
     @property
+    @lru_cache()
     def potential_length(self):
         return self._potential_length(self._extra_leaves)
 
     @property
+    @lru_cache()
     def potential_width(self):
         # Fournier and Andrieu(1998) Pg242 YY
         return self.potential_length * self.width_to_length_ratio
@@ -115,11 +118,13 @@ class Leaf(Organ):
     # L_max is the length of the largest leaf when grown at T_peak. Here we assume LM_min is determined at growing Topt with minmal (generic) leaf no, SK 8/2011
     # If this routine runs before TI, totalLeaves = genericLeafNo, and needs to be run with each update until TI and total leaves are finalized, SK
     @property
+    @lru_cache()
     def growth_duration(self):
         # shortest possible linear phase duration in physiological time (days instead of GDD) modified
         return self.potential_length * self.rank_effect(weight=0.5) / self.maximum_elongation_rate
 
     @property
+    @lru_cache()
     def phase1_delay(self):
         # not used in MAIZSIM because LTAR is used to initiate leaf growth.
         # Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
@@ -131,6 +136,7 @@ class Leaf(Organ):
         return np.clip(np.exp(-1.17 + 0.047 * leaves), 0.5, 1.0)
 
     @property
+    @lru_cache()
     def leaf_number_effect(self):
         #FIXME used to leaves_total, not potential
         return self._leaf_number_effect(self.p.pheno.leaves_potential)
