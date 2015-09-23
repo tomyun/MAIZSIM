@@ -16,6 +16,7 @@ from ..atmosphere import VaporPressure, Weather
 
 import numpy as np
 import scipy.optimize
+from functools import lru_cache
 
 class Stomata:
     def __init__(self, leaf_width):
@@ -105,6 +106,7 @@ class Stomata:
         self.gs = gs
         return self.gs
 
+    @lru_cache()
     def _leafp_effect(self, LWP):
         # pressure - leaf water potential MPa...
         sf = 2.3 # sensitivity parameter Tuzet et al. 2003 Yang
@@ -168,6 +170,7 @@ class Photosynthesis:
         #self.K_max = 6.67e-3 # max. xylem conductance (mol m-2 s-1 MPa-1) from root to leaf, Dewar (2002)
 
     # Arrhenius equation
+    @lru_cache()
     def _temperature_dependence_rate(self, Ea, T, Tb=25.):
         R = 8.314 # universal gas constant (J K-1 mol-1)
         K = 273.
@@ -179,6 +182,7 @@ class Photosynthesis:
         except ZeroDivisionError:
             return 0
 
+    @lru_cache()
     def _nitrogen_limited_rate(self, N):
         # in Sinclair and Horie, 1989 Crop sciences, it is 4 and 0.2
         # In J Vos. et al. Field Crop study, 2005, it is 2.9 and 0.25
