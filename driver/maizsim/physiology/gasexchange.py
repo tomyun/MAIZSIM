@@ -77,7 +77,18 @@ class Stomata:
         a = m * g1 * A_net / Cs
         b = g0 + gb - (m * g1 * A_net / Cs)
         c = (-RH * gb) - g0
-        hs = max(np.roots([a, b, c]))
+        #hs = max(np.roots([a, b, c]))
+        #hs = scipy.optimize.brentq(lambda x: np.polyval([a, b, c], x), 0, 1)
+        #hs = scipy.optimize.fsolve(lambda x: np.polyval([a, b, c], x), 0)
+        def quadratic_solve_upper(a, b, c):
+            if a == 0:
+                return 0
+            v = b**2 - 4*a*c
+            if v < 0:
+                return -b/a # imagniary roots
+            else:
+                return (-b + np.sqrt(v)) / (2*a)
+        hs = quadratic_solve_upper(a, b, c)
         hs = np.clip(hs, 0.3, 1.) # preventing bifurcation
 
         #FIXME unused?
@@ -239,7 +250,17 @@ class Photosynthesis:
         # Light and electron transport limited A mediated by J
         def transport_limited():
             theta = 0.5
-            J = min(np.roots([theta, -(I2+Jmax), I2*Jmax])) # rate of electron transport
+            #J = min(np.roots([theta, -(I2+Jmax), I2*Jmax])) # rate of electron transport
+            #J = min(scipy.optimize.fsolve(lambda x: np.polyval([theta, -(I2+Jmax), I2*Jmax], x), 0))
+            def quadratic_solve_lower(a, b, c):
+                if a == 0:
+                    return 0
+                v = b**2 - 4*a*c
+                if v < 0:
+                    return -b/a # imagniary roots
+                else:
+                    return (-b - np.sqrt(v)) / (2*a)
+            J = quadratic_solve_lower(theta, -(I2+Jmax), I2*Jmax)
             x = 0.4 # Partitioning factor of J, yield maximal J at this value
             Aj1 = x * J/2. - Rm + gbs*Cm
             Aj2 = (1-x) * J/3. - Rd
