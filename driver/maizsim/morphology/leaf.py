@@ -145,6 +145,7 @@ class Leaf(Organ):
         return self._leaf_number_effect(self.p.pheno.leaves_potential)
 
     @property
+    @lru_cache()
     def potential_area(self):
         # daughtry and hollinger (1984) Fournier and Andrieu(1998) Pg242 YY
         maximum_area = self.potential_length * self.potential_width * self.area_ratio
