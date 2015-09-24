@@ -1,4 +1,5 @@
 import numpy as np
+from functools import lru_cache
 
 class VaporPressure:
     # Campbell and Norman (1998), p 41 Saturation vapor pressure in kPa
@@ -13,27 +14,32 @@ class VaporPressure:
     #c = 243.04 # C
 
     @classmethod
+    @lru_cache()
     def saturation(cls, T):
         a, b, c = cls.a, cls.b, cls.c
         return a*np.exp((b*T)/(c+T))
 
     @classmethod
+    @lru_cache()
     def ambient(cls, T, RH):
         es = cls.saturation(T)
         return es * RH
 
     @classmethod
+    @lru_cache()
     def deficit(cls, T, RH):
         es = cls.saturation(T)
         return es * (1 - RH)
 
     @classmethod
+    @lru_cache()
     def relative_humidity(cls, T, VPD):
         es = cls.saturation(T)
         return 1 - VPD / es
 
     # slope of the sat vapor pressure curve: first order derivative of Es with respect to T
     @classmethod
+    @lru_cache()
     def curve_slope(cls, T, P):
         es = cls.saturation(T)
         b, c = cls.b, cls.c
