@@ -1,5 +1,5 @@
 from .organ import Organ
-from ..phenology.tracker import Accumulator, BetaFunc, Q10Func
+from ..phenology.tracker import Accumulator, BetaFunc, Q10Func, WaterStress
 
 import numpy as np
 from functools import lru_cache
@@ -15,6 +15,9 @@ class Leaf(Organ):
         self._area_tracker = Accumulator().use_timestep(dt)
         self._aging_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
         self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
+        self._area_water_stress_tracker = WaterStress().use_timestep(dt)
+        self._stay_green_water_stress_tracker = WaterStress(scale=0.5).use_timestep(dt)
+        self._senescence_water_stress_tracker = WaterStress(scale=0.5).use_timestep(dt)
 
         # temperature at which experiments run where parameters for leaf expansion were determined
         #self._leaf_calibrated_temperature = self.p.pheno.calibrated_tempreature
@@ -250,31 +253,15 @@ class Leaf(Organ):
     def area(self):
         return self._area_tracker.rate
 
-    def _water_stress_duration(self, scale=1):
-        # This assumes 0.25mg/m2 minimum N required, and below this the value is 0.0.
-        # threshold predawn leaf water potential (in bars) below which water stress triggers senescence, needs to be substantiated with lit or exp evidence, SK
-        # This is the water potential at which considerable reduction in leaf growth takes place in corn, sunflower, and soybean in Boyear (1970)
-        water_effect = self.water_potential_effect(-4.0)
-        # scale for reduction in leaf lifespan and aging rate
-        timestep = self._elongation_tracker.timestep
-        return scale * (1 - water_effect) * timestep
+    @property
+    def stay_green_water_stress_duration(self):
+        return self._stay_green_water_stress_tracker.rate
 
     @property
     def stay_green_duration(self):
         # SK 8/20/10: as in Sinclair and Horie, 1989 Crop sciences, N availability index scaled between 0 and 1 based on
         #nitrogen_index = np.fmax(0, (2 / (1 + np.exp(-2.9 * (self.g_content - 0.25))) - 1))
-
-        # scale for reduction in leaf lifespan and aging rate
-        if self.mature:
-            # One day of cumulative severe water stress (i.e., water_effect = 0.0 around -4MPa) would result in a reduction of leaf lifespan in relation staygreeness and growthDuration, SK
-            # if scale is 1.0, one day of severe water stress shortens one day of stayGreenDuration
-            scale = 0.5
-        #TODO handle dead leaf?
-        #elif self.dead:
-        else:
-            scale = 0
-        #TODO handle after aging?
-        return np.fmax(0, self.stay_green * self.growth_duration - self._water_stress_duration(scale))
+        return np.fmax(0, self.stay_green * self.growth_duration - self.stay_green_water_stress_duration)
 
     @property
     def active_age(self):
@@ -286,14 +273,13 @@ class Leaf(Organ):
         return self._aging_tracker.rate
 
     @property
+    def senescence_water_stress_duration(self):
+        return self._senescence_water_stress_tracker.rate
+
+    @property
     def senescence_duration(self):
         # end of growth period, time to maturity
-        if self.aging:
-            # if scale is 0.5, one day of severe water stress at predawn shortens one half day of agingDuration
-            scale = 0.5
-        else:
-            scale = 0
-        return np.fmax(0, self.growth_duration - self._water_stress_duration(scale))
+        return np.fmax(0, self.growth_duration - self.senescence_water_stress_duration)
 
     @property
     def senescence_age(self):
@@ -381,6 +367,7 @@ class Leaf(Organ):
         super().update()
         self.expand()
         self.senescence()
+        self.water_stress()
 
     # leaf expansiopn rate based on a determinate sigmoid function by Yin et al. (2003)
     def expand(self):
@@ -394,3 +381,15 @@ class Leaf(Organ):
             self._aging_tracker.update(T)
         elif not self.dead:
             self._senescence_tracker.update(T)
+
+    def water_stress(self):
+        if self.mature:
+            # One day of cumulative severe water stress (i.e., water_effect = 0.0 around -4MPa) would result in a reduction of leaf lifespan in relation staygreeness and growthDuration, SK
+            # if scale is 1.0, one day of severe water stress shortens one day of stayGreenDuration
+            self._stay_green_water_stress_tracker.update(self.water_potential_effect(-4.0))
+        if self.aging:
+            # if scale is 0.5, one day of severe water stress at predawn shortens one half day of agingDuration
+            self._senescence_water_stress_tracker.update(self.water_potential_effect(-4.0))
+        #TODO handle dead leaf?
+        #elif self.dead:
+        #TODO handle after aging?
