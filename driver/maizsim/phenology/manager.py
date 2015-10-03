@@ -43,7 +43,6 @@ class Phenology:
         queue = self._queue()
         T = self.temperature
         [s.update(T) for s in queue]
-        [s.post_update() for s in queue]
 
         #FIXME remove finish() for simplicity
         [s.finish() for s in queue if s.over()]

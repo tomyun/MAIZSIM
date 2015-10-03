@@ -16,9 +16,6 @@ class Stage:
     def update(self, T):
         self._tracker.update(T)
 
-    def post_update(self):
-        pass
-
     @property
     def rate(self):
         return self._tracker.rate
