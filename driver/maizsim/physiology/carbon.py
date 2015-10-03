@@ -24,6 +24,9 @@ class Carbon(Trait):
 
     #TODO merge consume_pool / reserve with a solid logic
     def consume_pool(self, amount):
+        #HACK update seed mass here
+        amount = self.p.mass.reduce_seed(amount)
+
         #FIXME no boundary check
         self.pool -= amount
 
