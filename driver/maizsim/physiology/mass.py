@@ -12,7 +12,6 @@ class Mass(Trait):
         return self._seed
 
     #TODO handle carbon supply from the seed
-    @property
     def reduce_seed(self, supply):
         supply = np.fmin(self._seed, supply)
         self._seed -= supply
