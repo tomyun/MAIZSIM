@@ -5,13 +5,9 @@ class LeafAppearance(Stage):
     #FIXME use correct args
     def setup(self, R_max_LTAR=0.53):
         self.R_max = R_max_LTAR
-        self.leaves = 0
 
     def tracker(self):
         return BetaFunc(R_max=self.R_max)
-
-    def post_update(self):
-        self.leaves = int(self.rate)
 
     def ready(self):
         initiated_leaves = self.pheno.leaf_initiation.leaves
@@ -21,3 +17,7 @@ class LeafAppearance(Stage):
         initiated_leaves = self.pheno.leaf_initiation.leaves
         #HACK ensure leaves are initiated
         return self.leaves >= initiated_leaves > 0
+
+    @property
+    def leaves(self):
+        return int(self.rate)
