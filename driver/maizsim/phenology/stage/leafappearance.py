@@ -10,8 +10,7 @@ class LeafAppearance(Stage):
         return BetaFunc(R_max=self.R_max)
 
     def ready(self):
-        initiated_leaves = self.pheno.leaf_initiation.leaves
-        return self.leaves < initiated_leaves
+        return self.pheno.germination.over()
 
     def over(self):
         initiated_leaves = self.pheno.leaf_initiation.leaves
