@@ -142,7 +142,7 @@ class Phenology:
     def gdd_after_emergence(self):
         if self.emergence.over():
             #HACK tracker is reset when emergence is over
-            return self.gst_recorder.rate
+            return self.gdd_recorder.rate
         else:
             return 0
 
