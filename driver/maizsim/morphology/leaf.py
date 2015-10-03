@@ -77,21 +77,21 @@ class Leaf(Organ):
         return self.p.pheno.leaves_potential - self.p.pheno.leaves_generic
 
     @lru_cache()
-    def _potential_length(self, extra_leaves):
+    def _maximum_length(self, extra_leaves):
         LM_min = 115
         k = 24.0
         return np.sqrt(LM_min**2 + k * extra_leaves)
 
     @property
     @lru_cache()
-    def potential_length(self):
-        return self._potential_length(self._extra_leaves)
+    def maximum_length(self):
+        return self._maximum_length(self._extra_leaves)
 
     @property
     @lru_cache()
-    def potential_width(self):
+    def maximum_width(self):
         # Fournier and Andrieu(1998) Pg242 YY
-        return self.potential_length * self.width_to_length_ratio
+        return self.maximum_length * self.width_to_length_ratio
 
     #TODO better name, shared by growth_duration and pontential_area
     @lru_cache()
@@ -111,6 +111,11 @@ class Leaf(Organ):
         #FIXME leaves_potential used to be leaves_total
         return self._rank_effect(self.rank, self.p.pheno.leaves_potential, weight)
 
+    @property
+    @lru_cache()
+    def potential_length(self):
+        return self.maximum_length * self.rank_effect(weight=0.5)
+
     # from CLeaf::calc_dimensions()
     # LM_min is a length characteristic of the longest leaf,in Fournier and Andrieu 1998, it was 90 cm
     # LA_max is a fn of leaf no (Birch et al, 1998 fig 4) with largest reported value near 1000cm2. This is implemented as lfno_effect below, SK
@@ -124,7 +129,7 @@ class Leaf(Organ):
     @lru_cache()
     def growth_duration(self):
         # shortest possible linear phase duration in physiological time (days instead of GDD) modified
-        return self.potential_length * self.rank_effect(weight=0.5) / self.maximum_elongation_rate
+        return self.potential_length / self.maximum_elongation_rate
 
     @property
     @lru_cache()
@@ -148,12 +153,12 @@ class Leaf(Organ):
     @lru_cache()
     def potential_area(self):
         # daughtry and hollinger (1984) Fournier and Andrieu(1998) Pg242 YY
-        maximum_area = self.potential_length * self.potential_width * self.area_ratio
+        maximum_area = self.maximum_length * self.maximum_width * self.area_ratio
 
         # equa 6. Fournier and Andrieu(1998) multiplied by Birch et al. (1998) leaf no effect
         # LA_max the area of the largest leaf
         # PotentialArea potential final area of a leaf with rank "n". YY
-        return maximum_area * self.leaf_number_effect * self.rank_effect()
+        return maximum_area * self.leaf_number_effect * self.rank_effect(weight=1)
 
     @property
     def green_ratio(self):
