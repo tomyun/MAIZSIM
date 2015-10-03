@@ -12,7 +12,8 @@ class Leaf(Organ):
     def setup(self):
         dt = self.p.pheno.timestep
         self._elongation_tracker = BetaFunc(R_max=1.0).use_timestep(dt)
-        self._area_tracker = Accumulator().use_timestep(dt)
+        #TODO handle actual/relative_area_increase in the tracker
+        self._area_tracker = Accumulator().use_timestep(1)
         self._aging_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
         self._senescence_tracker = Q10Func(T_opt=self.p.pheno.optimal_temperature).use_timestep(dt)
         self._area_water_stress_tracker = WaterStress().use_timestep(dt)
