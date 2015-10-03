@@ -41,6 +41,9 @@ class Plant:
         self.water = Water(self)
         self.photosynthesis = Photosynthesis(self)
 
+        #HACK initiate primordia here
+        self.initiate_primordia()
+
     def setup_structure(self):
         #TODO initiate_ear() like leaves and root
         self.ear = Ear(self)
@@ -48,13 +51,9 @@ class Plant:
         self.nodal_units = []
 
     def initiate_primordia(self):
-        self.nodal_units = [
-            NodalUnit(
-                self,
-                rank=i+1,
-                mass=self.mass.initial_leaf
-            ) for i in range(self.primordia)
-        ]
+        self.nodal_units = [NodalUnit(self, rank=i+1) for i in range(self.primordia)]
+        #HACK set leaf initial mass
+        [nu.leaf.import_carbohydrate(self.mass.initial_leaf) for nu in self.nodal_units]
 
     def initiate_root(self):
         # here we calculate the mass of roots that were initialized in the soil model (read in with the element data)
