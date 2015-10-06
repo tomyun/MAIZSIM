@@ -30,8 +30,8 @@ class Timer:
 
     @staticmethod
     def julian_day_from_datetime(time, hourly=False):
-        j = time.timestamp() / (24 * 60 * 60) - (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
-        return j if hourly else round(j)
+        j = time.replace(tzinfo=datetime.timezone.utc).timestamp() / (24 * 60 * 60) - (JULIAN_EPOCH_USDA - JULIAN_EPOCH_UNIX)
+        return j if hourly else int(j)
 
     @staticmethod
     def julian_hour_from_datetime(time):
