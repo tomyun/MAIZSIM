@@ -89,6 +89,10 @@ class Plant:
         self.weather = weather
         self.soil = soil
 
+        #HACK do nothing before sown
+        if self.weather.time < Timer.datetime_from_julian_day(self.initials.sowing_day):
+            return
+
         self.pheno.update()
 
         if self.pheno.germinating:
