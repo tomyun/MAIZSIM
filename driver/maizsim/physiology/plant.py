@@ -131,13 +131,12 @@ class Plant:
             self.initiate_leaves()
 
             self.calc_gas_exchange()
-            self.carbon.assimilate_to_pool()
-            #self.maintenance_respiration() #FIXME no side-effect
-            self.allocate_carbon()
             if weather.time.hour == 0: # midnight
                 self.carbon.reset_pool()
             else:
                 self.carbon.assimilate_to_pool()
+            #self.maintenance_respiration() #FIXME no side-effect
+            self.allocate_carbon()
             #self.update_mass()
 
 
