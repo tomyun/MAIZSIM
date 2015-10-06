@@ -3,19 +3,15 @@ from .trait import Trait
 import numpy as np
 
 class Mass(Trait):
-    def setup(self):
-        # seed weight g/seed
-        self._seed = 0.275
+    # seed weight g/seed
+    @property
+    def initial_seed(self):
+        return 0.275
 
+    #HACK carbon mass of seed is pulled in the reserve
     @property
     def seed(self):
-        return self._seed
-
-    #TODO handle carbon supply from the seed
-    def reduce_seed(self, supply):
-        supply = np.fmin(self._seed, supply)
-        self._seed -= supply
-        return supply
+        return self.initial_seed - self.p.carbon.reserve_from_seed
 
     @property
     def stem(self):
@@ -25,7 +21,7 @@ class Mass(Trait):
 
     @property
     def initial_leaf(self):
-        return self.seed * self.p.ratio.initial_leaf
+        return self.initial_seed * self.p.ratio.initial_leaf
 
     # this is the total mass of active leaves that are not entirely dead (e.g., dropped).
     # It would be slightly greather than the green leaf mass because some senesced leaf area is included until they are complely aged (dead), SK

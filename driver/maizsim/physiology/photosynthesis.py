@@ -200,8 +200,9 @@ class Photosynthesis(Trait):
 
     @property
     def conductance(self):
-        #TODO is this condition necessary?
-        #if sunlit_LAI >= 0 and shaded_LAI >= 0 and LAI >= 0:
+        #HACK ensure 0 when one if LAI is 0, i.e., night
+        if (self.leaf_area_index_array == 0).any():
+            return 0
         try:
             # average stomatal conductance Yang
             c = self._weighted(self.conductance_array) / self.p.area.leaf_area_index

@@ -52,8 +52,8 @@ class Plant:
 
     def initiate_primordia(self):
         self.nodal_units = [NodalUnit(self, rank=i+1) for i in range(self.primordia)]
-        #HACK set leaf initial mass
-        [nu.leaf.import_carbohydrate(self.mass.initial_leaf) for nu in self.nodal_units]
+        #FIXME should not allocate leaf mass here, otherwise accounting total seed mass gets complicated
+        #[nu.leaf.import_carbohydrate(self.mass.initial_leaf) for nu in self.nodal_units]
 
     def initiate_root(self):
         # here we calculate the mass of roots that were initialized in the soil model (read in with the element data)
@@ -99,7 +99,7 @@ class Plant:
 
             #TODO temperature setting?
 
-            #TODO carbon reserve/pool init
+            #HACK carbon reserve/pool init from seed done in Carbon object
 
             #HACK update_leaves() should precede initiate_leaves()
             self.update_leaves()

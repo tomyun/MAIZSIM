@@ -9,7 +9,7 @@ class Nitrogen(Trait):
     def setup(self):
         # assume nitrogen concentration at the beginning is 3.4% of the total weight of the seed
         # need to check with Yang. This doesn't look correct
-        self.set_pool(self.p.mass.seed * 0.034)
+        self.set_pool(self.initial_pool)
 
     def set_pool(self, pool):
         shoot_mass = self.p.mass.shoot
@@ -17,13 +17,14 @@ class Nitrogen(Trait):
             # when shoot biomass is lower than 100 g/m2, the maximum [N] allowed is 6.3%
             # shoot biomass and Nitrogen are in g
             # need to adjust demand or else there will be mass balance problems
+            #FIXME self.initial_pool or just pool?
             pool = np.fmin(0.063 * shoot_mass, self.initial_pool)
         self._pool = pool
 
     @property
     def initial_pool(self):
         # assume nitrogen concentration at the beginning is 3.4% of the total weight of the seed
-        return 0.034 * self.p.mass.seed # 0.275
+        return 0.034 * self.p.mass.initial_seed # 0.275
 
     @property
     def pool(self):

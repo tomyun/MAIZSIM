@@ -10,6 +10,20 @@ class Carbon(Trait):
         self.supply = 0 # daily mobilization of carbon
         #self.demand = 0 # property
 
+        self.allocate_reserve_from_seed()
+
+        # assume it takes 20 days to exhaust seed C reserve
+        #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (self.p.initials.timestep / 60))
+        self.translocate_to_pool()
+        #FIXME the original code did not reset pool here
+
+    @property
+    def reserve_from_seed(self):
+        return self.p.mass.initial_seed * self._content
+
+    def allocate_reserve_from_seed(self):
+        self.reserve = self.reserve_from_seed
+
     def translocate_to_pool(self, amount=None):
         if amount is None:
             amount = self.reserve
@@ -24,9 +38,6 @@ class Carbon(Trait):
 
     #TODO merge consume_pool / reserve with a solid logic
     def consume_pool(self, amount):
-        #HACK update seed mass here
-        amount = self.p.mass.reduce_seed(amount)
-
         #FIXME no boundary check
         self.pool -= amount
 
@@ -38,13 +49,6 @@ class Carbon(Trait):
         #FIXME need np.fmax(0, self.pool)?
         self.reserve += self.pool
         self.pool = 0
-
-    def allocate_with_seed(self):
-        self.reserve = self.p.mass.seed * self._content
-        # assume it takes 20 days to exhaust seed C reserve
-        #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (self.p.initials.timestep / 60))
-        self.translocate_to_pool()
-        #FIXME the original code did not reset pool here
 
     def reset_root_pool(self):
         self.root_pool = 0
