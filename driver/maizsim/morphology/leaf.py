@@ -383,11 +383,12 @@ class Leaf(Organ):
             self._area_tracker.update(self.actual_area_increase)
 
     def senescence(self):
-        T = self.p.pheno.temperature
-        if not self.aging:
-            self._aging_tracker.update(T)
-        elif not self.dead:
-            self._senescence_tracker.update(T)
+        if self.mature:
+            T = self.p.pheno.temperature
+            if not self.aging:
+                self._aging_tracker.update(T)
+            elif not self.dead:
+                self._senescence_tracker.update(T)
 
     def water_stress(self):
         if self.mature:
