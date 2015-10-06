@@ -132,7 +132,7 @@ class Controller:
             None, # self.plant.nitrogen.CumulativeNitrogenDemand()
             None, # self.plant.nitrogen.CumulativeNitrogenSoilUptake()
             self.plant.nitrogen.leaf, # return mass of N in leaves YY
-            None, # self.plant.carbon.ActualCarboIncrement()
+            soil.min_root_carbon_supply_rate, # self.plant.carbon.ActualCarboIncrement()?
             self.plant.mass.total,
             self.plant.mass.shoot, # masses are grams per plant
             self.plant.mass.ear,
