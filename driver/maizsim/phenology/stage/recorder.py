@@ -14,6 +14,10 @@ class GstRecorder(Recorder):
     def tracker(self):
         return TemperatureTracker()
 
+    #HACK growing season only counts after germination
+    def ready(self):
+        return self.pheno.germination.over()
+
 
 class GddRecorder(Recorder):
     def tracker(self):
