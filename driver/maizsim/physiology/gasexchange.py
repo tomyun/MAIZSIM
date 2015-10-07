@@ -129,7 +129,7 @@ class Stomata:
         return self.boundary_layer_resistance_co2() + self.stomatal_resistance_co2()
 
 
-class Photosynthesis:
+class C4:
     def __init__(self, leaf_n_content):
         self.setup()
         self.leaf_n_content = leaf_n_content
@@ -168,6 +168,10 @@ class Photosynthesis:
         #self.lambda_r = 4.0e-12 # Dewar's email
         #self.lambda_l = 1.0e-12
         #self.K_max = 6.67e-3 # max. xylem conductance (mol m-2 s-1 MPa-1) from root to leaf, Dewar (2002)
+
+        self.gbs = 0.003 # bundle sheath conductance to CO2, mol m-2 s-1
+        #self.gi = 1.0 # conductance to CO2 from intercelluar to mesophyle, mol m-2 s-1, assumed
+
 
     # Arrhenius equation
     @lru_cache()
@@ -211,7 +215,7 @@ class Photosynthesis:
                       / (1 + np.exp((Sj*Tk  - Hj) / (R*Tk)))
         return np.fmax(0, r)
 
-    def photosynthesize_c4(self, I2, Cm, T_leaf):
+    def _enzyme_limited_photosynthesis_rate(self, Cm, T_leaf):
         O = 210. # gas units are mbar
         Om = O # mesophyll O2 partial pressure
 
@@ -220,70 +224,71 @@ class Photosynthesis:
         Ko = self.Ko25 * self._temperature_dependence_rate(self.Eao, T_leaf)
         Km = Kc * (1 + Om / Ko) # effective M-M constant for Kc in the presence of O2
 
+        Vpmax = self.Vpm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.EaVp, T_leaf)
+        Vcmax = self.Vcm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.EaVc, T_leaf)
+
+        # PEP carboxylation rate, that is the rate of C4 acid generation
+        Vp1 = (Cm * Vpmax) / (Cm + Kp)
+        Vp2 = Vpr = 80. # PEP regeneration limited Vp, value adopted from vC book
+        Vp = max(min(Vp1, Vp2), 0.)
+
         Rd = self._dark_respiration(T_leaf)
         Rm = 0.5 * Rd
 
-        Vpmax = self.Vpm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.EaVp, T_leaf)
-        Vcmax = self.Vcm25 * self._nitrogen_limited_rate(self.leaf_n_content) * self._temperature_dependence_rate(self.EaVc, T_leaf)
-        Jmax  = self._maximum_electron_transport_rate(T_leaf, self.leaf_n_content)
+        #FIXME where should gamma be at?
+        # half the reciprocal of rubisco specificity, to account for O2 dependence of CO2 comp point,
+        # note that this become the same as that in C3 model when multiplied by [O2]
+        #gamma1 = 0.193
+        #gamma_star = gamma1 * Os
+        #gamma = (Rd*Km + Vcmax*gamma_star) / (Vcmax - Rd)
 
-        gbs = 0.003 # bundle sheath conductance to CO2, mol m-2 s-1
-        #gi = 1.0 # conductance to CO2 from intercelluar to mesophyle, mol m-2 s-1, assumed
+        # Enzyme limited A (Rubisco or PEP carboxylation
+        Ac1 = Vp + self.gbs*Cm - Rm
+        #ac1 = max(0., ac1) # prevent Ac1 from being negative Yang 9/26/06
+        Ac2 = Vcmax - Rd
+        Ac = min(Ac1, Ac2)
+        return Ac
 
-        def enzyme_limited():
-            # PEP carboxylation rate, that is the rate of C4 acid generation
-            Vp1 = (Cm * Vpmax) / (Cm + Kp)
-            Vp2 = Vpr = 80. # PEP regeneration limited Vp, value adopted from vC book
-            Vp = max(min(Vp1, Vp2), 0.)
+    # Light and electron transport limited A mediated by J
+    def _transport_limited_photosynthesis_rate(self, I2, Cm, T_leaf):
+        Jmax = self._maximum_electron_transport_rate(T_leaf, self.leaf_n_content)
+        theta = 0.5
+        #J = min(np.roots([theta, -(I2+Jmax), I2*Jmax])) # rate of electron transport
+        #J = min(scipy.optimize.fsolve(lambda x: np.polyval([theta, -(I2+Jmax), I2*Jmax], x), 0))
+        def quadratic_solve_lower(a, b, c):
+            if a == 0:
+                return 0
+            v = b**2 - 4*a*c
+            if v < 0:
+                return -b/a # imagniary roots
+            else:
+                return (-b - np.sqrt(v)) / (2*a)
+        J = quadratic_solve_lower(theta, -(I2+Jmax), I2*Jmax)
+        x = 0.4 # Partitioning factor of J, yield maximal J at this value
 
-            #FIXME where should gamma be at?
-            # half the reciprocal of rubisco specificity, to account for O2 dependence of CO2 comp point,
-            # note that this become the same as that in C3 model when multiplied by [O2]
-            #gamma1 = 0.193
-            #gamma_star = gamma1 * Os
-            #gamma = (Rd*Km + Vcmax*gamma_star) / (Vcmax - Rd)
+        Rd = self._dark_respiration(T_leaf)
+        Rm = 0.5 * Rd
 
-            # Enzyme limited A (Rubisco or PEP carboxylation
-            Ac1 = Vp + gbs*Cm - Rm
-            #ac1 = max(0., ac1) # prevent Ac1 from being negative Yang 9/26/06
-            Ac2 = Vcmax - Rd
-            Ac = min(Ac1, Ac2)
-            return Ac
-        Ac = enzyme_limited()
+        Aj1 = x * J/2. - Rm + self.gbs*Cm
+        Aj2 = (1-x) * J/3. - Rd
+        Aj = min(Aj1, Aj2)
+        return Aj
 
-        # Light and electron transport limited A mediated by J
-        def transport_limited():
-            theta = 0.5
-            #J = min(np.roots([theta, -(I2+Jmax), I2*Jmax])) # rate of electron transport
-            #J = min(scipy.optimize.fsolve(lambda x: np.polyval([theta, -(I2+Jmax), I2*Jmax], x), 0))
-            def quadratic_solve_lower(a, b, c):
-                if a == 0:
-                    return 0
-                v = b**2 - 4*a*c
-                if v < 0:
-                    return -b/a # imagniary roots
-                else:
-                    return (-b - np.sqrt(v)) / (2*a)
-            J = quadratic_solve_lower(theta, -(I2+Jmax), I2*Jmax)
-            x = 0.4 # Partitioning factor of J, yield maximal J at this value
-            Aj1 = x * J/2. - Rm + gbs*Cm
-            Aj2 = (1-x) * J/3. - Rd
-            Aj = min(Aj1, Aj2)
-            return Aj
-        Aj = transport_limited()
+    def _combined_photosynthesis_rate(self, Ac, Aj):
+        beta = 0.99 # smoothing factor
+        # smooting the transition between Ac and Aj
+        return ((Ac+Aj) - ((Ac+Aj)**2 - 4*beta*Ac*Aj)**0.5) / (2*beta)
 
-        def combined(Ac, Aj):
-            beta = 0.99 # smoothing factor
-            # smooting the transition between Ac and Aj
-            return ((Ac+Aj) - ((Ac+Aj)**2 - 4*beta*Ac*Aj)**0.5) / (2*beta)
-        A_net = combined(Ac, Aj)
+    #FIXME put them accordingly
+    def _bundle_sheath(self, A_net):
+        alpha = 0.0001 # fraction of PSII activity in the bundle sheath cell, very low for NADP-ME types
+        Os = alpha * A_net / (0.047*self.gbs) + Om # Bundle sheath O2 partial pressure, mbar
+        #Cbs = Cm + (Vp - A_net - Rm) / self.gbs # Bundle sheath CO2 partial pressure, ubar
 
-        #FIXME put them accordingly
-        def bundle_sheath(A_net):
-            alpha = 0.0001 # fraction of PSII activity in the bundle sheath cell, very low for NADP-ME types
-            Os = alpha * A_net / (0.047*gbs) + Om # Bundle sheath O2 partial pressure, mbar
-            #Cbs = Cm + (Vp - A_net - Rm) / gbs # Bundle sheath CO2 partial pressure, ubar
-
+    def photosynthesize(self, I2, Cm, T_leaf):
+        Ac = self._enzyme_limited_photosynthesis_rate(Cm, T_leaf)
+        Aj = self._transport_limited_photosynthesis_rate(I2, Cm, T_leaf)
+        A_net = self._combined_photosynthesis_rate(Ac, Aj)
         return A_net
 
 
@@ -316,7 +321,7 @@ class PhotosyntheticLeaf:
         self.stomata = Stomata(width)
         self.stomata.update(weather, water, A_net=0.)
 
-        self.photosynthesis = Photosynthesis(nitrogen)
+        self.c4 = C4(nitrogen)
 
     def optimize_stomata(self, T_leaf):
         #FIXME is it right place? maybe need coordination with geometry object in the future
@@ -345,7 +350,7 @@ class PhotosyntheticLeaf:
             I2 = light()
             A_net0 = x[0]
             Cm0 = co2_mesophyll(A_net0)
-            A_net1 = self.photosynthesis.photosynthesize_c4(I2, Cm0, T_leaf)
+            A_net1 = self.c4.photosynthesize(I2, Cm0, T_leaf)
             #Cm1 = co2_mesophyll(A_net1)
             #FIXME can we just difference between A_net?
             return (A_net0 - A_net1)**2
@@ -359,7 +364,7 @@ class PhotosyntheticLeaf:
         #HACK ensure stomata state matches with the final A_net
         update_stomata(self.A_net)
 
-        self.Rd = self.photosynthesis._dark_respiration(T_leaf)
+        self.Rd = self.c4._dark_respiration(T_leaf)
         self.A_gross = max(0., self.A_net + self.Rd) # gets negative when PFD = 0, Rd needs to be examined, 10/25/04, SK
 
         self.Ci = co2_mesophyll(self.A_net)
