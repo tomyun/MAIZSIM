@@ -315,6 +315,11 @@ class Driver:
             self.plant.water.supply = self.water_uptake / (S.eomult * S.poprow) * 100.
             #dt 4-24-2011 I replaced SHOOTR->AWUPS with WaterUptake. AWUPS is an instantaneous value.
 
+            # ET_Supply is the actual amount of water that can be taken from the soil slab ( derived from AWUPS, g day-1 slab-1)
+            # To compare this variable with the et rate in maizesim it has to be converted into grams water per plant
+            # To do this multiply by EOMULT to double slab width if plant is at the edge. Then multiply by 100/PopRow
+            # to get area inhabited by the plant. This provides a per plant estimate from area.
+
             # for debugging
             ET_diff = self.plant.water.supply * 24 - S.et_demand
 
