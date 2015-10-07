@@ -457,7 +457,7 @@ class Driver:
         # in existing biomass, equation 3 in Lindquist et al. 2007)
         # the returned value from get_N() is in g N/plant. It has to be converted to g/m-2 ground
         # that's why the actual n content is mulitpled by pSC->getIniInfo().plantDensity/(100*100) YY
-        U_D = a * 10 / 100. * pow(shoot_weight_per_m2, -b) - self.plant.nitrogen.pool * self.initials.plant_density
+        U_D = a * 10 / 100. * pow(shoot_weight_per_m2, -b) - self.plant.nitrogen.pool * self.initials.plant_density / 100**2
 
         # set up account of N here
         # first hourly
