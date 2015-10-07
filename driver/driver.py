@@ -367,10 +367,9 @@ class Driver:
         # pass appropriate data to 2DSOIL file structures
         #dt 03/14/2011- I added a pool of carbo to hold leftover carbon from root growth, here it is implemented - see also plant
         # This holds any carbon not used for root growth in the previous time step
-        plant = self.plant
-        pool = plant.carbon.root_pool
-        root = plant.carbon.root
-        shoot = plant.carbon.shoot
+        pool = self.plant.carbon.root_pool
+        root = self.plant.carbon.root
+        shoot = self.plant.carbon.shoot
         #ii = self.initinfo
 
         # this assures the pool is only used at night
@@ -378,7 +377,7 @@ class Driver:
         # since we have to add leftover carbo from pcrq to the shoot
         if pool > 0 and root < 0.00001:
             S.pcrl = (root + pool) * 24*self.pop_slab
-            plant.carbon.reset_root_pool()
+            self.plant.carbon.reset_root_pool()
         else:
             S.pcrl = root * 24*self.pop_slab
 
@@ -408,7 +407,7 @@ class Driver:
         # dividing it by plantdensity converts it to g plant-1 day-1
         S.lai = S.lcai
 
-        shoot_weight_per_m2 = plant.mass.shoot * self.initials.plant_density # Calculate total shoot mass per meter aquared YY
+        shoot_weight_per_m2 = self.plant.mass.shoot * self.initials.plant_density # Calculate total shoot mass per meter aquared YY
         mass_increase = shoot_weight_per_m2 - self.old_shoot_weight_per_m2 # Calculated increase in above-ground biomass per m2 YY
 
         # The biomass returned by getPlant()->get_shootMass() is the weight of each single plant (g/plant),
