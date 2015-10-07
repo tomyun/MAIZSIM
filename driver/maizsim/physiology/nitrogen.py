@@ -25,7 +25,8 @@ class Nitrogen(Trait):
             # shoot biomass and Nitrogen are in g
             # need to adjust demand or else there will be mass balance problems
             #FIXME self.initial_pool or just pool?
-            pool = np.fmin(0.063 * shoot_mass, self.initial_pool)
+            #pool = np.fmin(0.063 * shoot_mass, self.initial_pool)
+            pool = np.fmin(0.063 * shoot_mass, pool)
         self._pool = pool
 
     @property
