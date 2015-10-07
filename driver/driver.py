@@ -397,7 +397,7 @@ class Driver:
         #w.pcrl = S.pcrl / self.pop_slab/24.
         #w.pcrq = S.pcrq / self.pop_slab/24.
 
-        S.lcai = plant.area.green_leaf * self.initials.plant_density
+        S.lcai = self.plant.area.green_leaf * self.initials.plant_density / 100**2
         S.cover = 1 - np.exp(-0.79*S.lcai)
         S.shade = S.cover * S.rowsp
         S.height = min(S.shade, S.rowsp)
