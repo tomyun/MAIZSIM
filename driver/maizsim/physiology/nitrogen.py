@@ -11,6 +11,13 @@ class Nitrogen(Trait):
         # need to check with Yang. This doesn't look correct
         self.set_pool(self.initial_pool)
 
+        #TODO set up interface
+        self.ratio = 0
+        self.hourly_soil_uptake = 0
+        self.hourly_demand = 0
+        self.cumulative_demand = 0
+        self.cumulative_soil_uptake = 0
+
     def set_pool(self, pool):
         shoot_mass = self.p.mass.shoot
         if shoot_mass * self.p.initials.plant_density <= 100: # g m-2

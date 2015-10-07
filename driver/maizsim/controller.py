@@ -129,8 +129,8 @@ class Controller:
             self.plant.photosynthesis.conductance if self.plant.pheno.emerged else 0, # return average stomatal conductance Yang 10/31/06
             self.plant.photosynthesis.vapor_pressure_deficit,
             self.plant.nitrogen.pool,
-            None, # self.plant.nitrogen.CumulativeNitrogenDemand()
-            None, # self.plant.nitrogen.CumulativeNitrogenSoilUptake()
+            self.plant.nitrogen.cumulative_demand,
+            self.plant.nitrogen.cumulative_soil_uptake,
             self.plant.nitrogen.leaf, # return mass of N in leaves YY
             soil.min_root_carbon_supply_rate, # self.plant.carbon.ActualCarboIncrement()?
             self.plant.mass.total,

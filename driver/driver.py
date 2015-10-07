@@ -75,7 +75,7 @@ class Driver:
             if M.nshoot == 0 and abs(T.time - self.initials.sowing_day) < 0.001:
                 M.nshoot = 1
 
-            self._update_nitrogen_uptake_error(S)
+            self._update_nitrogen_uptake_error()
 
             #HACK replace TWeather with Weather, Soil objects
             #w = self._create_weather(T, W)
@@ -184,6 +184,7 @@ class Driver:
         self.old_shoot_weight_per_m2 = 0.
         self.nitrogen_uptake_old = 0.
         self.cumulative_nitrogen_demand = 0. # grams plant-1
+        self.cumulative_nitrogen_uptake_error = 0.
 
     ###########
     # Uptakes #
@@ -197,8 +198,8 @@ class Driver:
         # hourly water uptake from 2dsoil
         self.water_uptake = 0.
 
-        S.ndemanderror = self.nitrogen_demand_error = 0
-        S.cumulativendemanderror = self.cumulative_nitrogen_demand_error = 0
+        S.ndemanderror = 0
+        S.cumulativendemanderror = 0
 
     def _update_uptakes(self, S, T):
         self._update_nitrogen_uptake(S)
@@ -219,21 +220,15 @@ class Driver:
             self.plant.nitrogen.set_pool(nuptake)
             # Units are converted from g slab-1 to g plant -1 YY
             # need to look at loss of N in the dropped leaf (plant N goes negative?)
-            #FIXME no nitrogen handling in Plant
-            #self.plant.set_N(nuptake - nloss)
+            #self.plant.nitrogen.set_pool(nuptake - nloss)
 
     def _update_water_uptake(self, S, T):
         self.water_uptake += S.awups * T.step
 
-    def _update_nitrogen_uptake_error(self, S):
+    def _update_nitrogen_uptake_error(self):
         # Calculate error for demand and actual uptake, if negative, demand is greater then uptake.
-        #FIXME no nitrogen handling in Plant
-        #err = self.nitrogen_uptake / self.pop_slab - self.plant.get_CumulativeNitrogenDemand()
-        err = self.nitrogen_uptake / self.pop_slab - self.cumulative_nitrogen_demand_error
-        self.nitrogen_demand_error = err
-        self.cumulative_nitrogen_demand_error += err
-        S.ndemanderror = self.nitrogen_demand_error
-        S.cumulativendemanderror = self.cumulative_nitrogen_demand_error
+        self.nitrogen_uptake_error = self.nitrogen_uptake / self.pop_slab - self.plant.nitrogen.cumulative_demand
+        self.cumulative_nitrogen_uptake_error += self.nitrogen_uptake_error
 
     ############
     # TWeather #
@@ -435,8 +430,7 @@ class Driver:
             # Calcualte above ground potential N concentration
             #nitrogen_ratio *= np.sqrt(shoot_weight_per_m2)
             nitrogen_ratio *= pow(shoot_weight_per_m2, 1 - b)
-        #FIXME no nitrogen handling in Plant
-        #plant.set_NitrogenRatio(nitrogen_ratio / 10.)
+        self.plant.nitrogen.ratio = nitrogen_ratio / 10
 
         # U_N maximum observed N uptake rate (g N m-2 ground d-1) (Lindquist et al, 2007) YY
         # The unit of U_N is g N m-2 ground d-1
@@ -470,20 +464,16 @@ class Driver:
         # Actual and needed N uptake in the last hour per plant per day
 
         # houly rate per day
-        hourly_actual_n_from_soil = (self.nitrogen_uptake - self.nitrogen_uptake_old) / self.pop_slab
-        #FIXME no nitrogen handling in Plant
-        #plant.set_HourlyNitrogenSoilUptake(hourly_actual_n_from_soil)
+        self.plant.nitrogen.hourly_soil_uptake = (self.nitrogen_uptake - self.nitrogen_uptake_old) / self.pop_slab
 
         # Determine the nitrogen demand (equation 1 Lindquist et al. 2007) in grams plant-1
         hourly_nitrogen_demand = max(U_P, 0) / self.initials.plant_density / 24.
-        #FIXME no nitrogen handling in Plant
-        #plant.set_HourlyNitrogenDemand(hourly_nitrogen_demand)
+        self.plant.nitrogen.hourly_demand = hourly_nitrogen_demand
 
         # now do cumulative amounts
         self.cumulative_nitrogen_demand += hourly_nitrogen_demand # grams plant-1 day-1
-        #FIXME no nitrogen handling in Plant
-        #plant.set_CumulativeNitrogenDemand(self.cumulative_nitrogen_demand)
-        #plant.set_CumulativeNitrogenSoilUptake(self.nitrogen_uptake / self.pop_slab)
+        self.plant.nitrogen.cumulative_demand = self.cumulative_nitrogen_demand
+        self.plant.nitrogen.cumulative_soil_uptake = self.nitrogen_uptake / self.pop_slab
 
         # Pass the nitrogen demand into 2dsoil YY
         # Units are ug slab-1
@@ -496,9 +486,8 @@ class Driver:
         # save the cumulative N uptake from this time step
         self.nitrogen_uptake_old = self.nitrogen_uptake
 
-        #HACK: moved to _update_nitrogen_uptake_error()
-        #S.ndemanderror = self.nitrogen_demand_error
-        #S.cumulativendemanderror = self.cumulative_nitrogen_demand_error
+        S.ndemanderror = self.nitrogen_uptake_error
+        S.cumulativendemanderror = self.cumulative_nitrogen_uptake_error
 
     def _handle_dead_or_not(self, M, T):
         if self.plant.pheno.dead:
