@@ -401,7 +401,7 @@ class Driver:
         S.cover = 1 - np.exp(-0.79*S.lcai)
         S.shade = S.cover * S.rowsp
         S.height = min(S.shade, S.rowsp)
-        S.et_demand = plant.water.supply * 24 # pass ET demand from shoot to root. Yang
+        S.et_demand = self.plant.photosynthesis.transpiration * 24 # pass ET demand from shoot to root. Yang
         # In GasExchange, the unit of ET is mmol m-2(leaf) sec-1
         # need to convert to grams plant-1
         # Here, multiplying ET by 0.018 and 3600*24 converts it to g m-2(ground) day-1
