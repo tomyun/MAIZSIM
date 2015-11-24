@@ -14,10 +14,14 @@ class TasselInitiation(Stage):
     def tracker(self):
         return LeafInductionRate(
             pheno=self.pheno, #FIXME to access weather.day_length
-            gst_recorder=self.pheno.gst_recorder,
             temperature_recorder=GstRecorder(self.pheno),
             juvenile_leaves=self.juvenile_leaves,
         )
+
+    def update(self, T):
+        if self._tracker.empty():
+            T = self.pheno.gst_recorder.rate
+        super().update(T)
 
     @property
     def juvenile_leaves(self):
