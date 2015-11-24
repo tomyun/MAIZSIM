@@ -23,11 +23,11 @@ class LeafInductionRate(Tracker):
 
         by_temperature = max(0., 13.6 - 1.89*T + 0.081*T**2 - 0.001*T**3)
 
-        day_length = self.pheno.plant.weather.day_length
-        if day_length is None:
-            by_photo_period = 0.
-        else:
+        if self.pheno.plant.variety.day_length_sensitive:
+            day_length = self.pheno.plant.weather.day_length
             by_photo_period = max(0., 0.1 * (self.juvenile_leaves - 10) * (day_length - 12.5))
+        else:
+            by_photo_period = 0.
 
         return by_temperature + by_photo_period
 

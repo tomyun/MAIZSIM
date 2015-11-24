@@ -6,9 +6,8 @@ import numpy as np
 
 class TasselInitiation(Stage):
     #TODO manage juvenile/adult leaves in more general place (i.e. LeafInitiation/Appearance or Manager?)
-    def setup(self, juvenile_leaves=15, day_length=None):
+    def setup(self, juvenile_leaves=15):
         self._juvenile_leaves = juvenile_leaves
-        self.day_length = day_length
         self._appeared_leaves_on_finish = 0
 
     def tracker(self):
