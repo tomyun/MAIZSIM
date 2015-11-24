@@ -247,7 +247,9 @@ class Carbon(Trait):
     @property
     def partition_shoot(self):
         shoot = self.shoot
-        if self.p.pheno.vegetative_growing:
+        #FIXME: vegetative growth
+        #if self.p.pheno.vegetative_growing:
+        if not self.p.pheno.tassel_initiated:
             return {
                 'leaf': shoot * 0.725,
                 'sheath': shoot * 0.275,
@@ -257,7 +259,9 @@ class Carbon(Trait):
                 'cob': 0,
                 'grain': 0,
             }
-        elif self.p.pheno.silking:
+        #FIXME: there is a period after silking and before grain filling that not handled by this function
+        #elif self.p.pheno.silking:
+        elif not self.p.pheno.grain_filling:
             def ratio(a, b, s):
                 r = a if s <= self._scale else b
                 return shoot * np.fmax(r, 0)
