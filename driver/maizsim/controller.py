@@ -100,6 +100,7 @@ class Controller:
             'AvailW',
             'solubleC',
             'Note',
+            'dayLength',
         ]
         self.crop_output = pd.DataFrame(columns=columns)
 
@@ -145,7 +146,7 @@ class Controller:
             soil.water,
             self.plant.carbon.reserve,
             self.plant.pheno.current_stage,
-            #weather.day_length, #FIXME no column defined
+            weather.day_length,
             #self.plant.pheno.gdd_after_emergence,
         ]
 
