@@ -6,6 +6,9 @@ def date(v):
     t = datetime.datetime.strptime(v.replace("'", ''), '%m/%d/%Y')
     return Timer.julian_day_from_datetime(t)
 
+def boolean(v):
+    return bool(int(v))
+
 class LegacyFile:
     def __init__(self, filename):
         self.load(filename)
