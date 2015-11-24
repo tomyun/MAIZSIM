@@ -1,12 +1,12 @@
 import numpy as np
 
 class Stage:
-    def __init__(self, pheno):
+    def __init__(self, pheno, **kwargs):
         self.pheno = pheno
-        self.setup()
+        self.setup(**kwargs)
         self._tracker = self.tracker().use_timestep(pheno.timestep)
 
-    def setup(self):
+    def setup(self, **kwargs):
         pass
 
     def tracker(self):
