@@ -13,14 +13,20 @@ class Phenology:
         self.gdd_recorder = gddr = stage.GddRecorder(self)
         self.gti_recorder = gtir = stage.GtiRecorder(self)
 
+        R_max_LIR = self.plant.variety.maximum_leaf_initiation_rate
+        R_max_LTAR = self.plant.variety.maximum_leaf_tip_appearance_rate
+        juvenile_leaves = self.plant.variety.generic_leaf_number
+        phyllochrons_to_silk = self.plant.variety.phyllochrons_to_silk
+        GDD_rating = self.plant.variety.gdd_rating
+
         self.germination = g = stage.Germination(self)
         self.emergence = e = stage.Emergence(self)
-        self.leaf_initiation = li = stage.LeafInitiation(self)
-        self.leaf_appearance = la = stage.LeafAppearance(self)
-        self.tassel_initiation = ti = stage.TasselInitiation(self)
-        self.silk = s = stage.Silk(self)
+        self.leaf_initiation = li = stage.LeafInitiation(self, R_max_LIR=R_max_LIR)
+        self.leaf_appearance = la = stage.LeafAppearance(self, R_max_LTAR=R_max_LTAR)
+        self.tassel_initiation = ti = stage.TasselInitiation(self, juvenile_leaves=juvenile_leaves)
+        self.silk = s = stage.Silk(self, R_max_LTAR=R_max_LTAR, phyllochrons=phyllochrons_to_silk)
         self.grain_filling_initiation = gfi = stage.GrainFillingInitiation(self)
-        self.mature = m1 = stage.Mature(self)
+        self.mature = m1 = stage.Mature(self, GDD_rating=GDD_rating)
         self.maturity = m2 = stage.Maturity(self)
         self.death = d = stage.Death(self)
 
