@@ -178,10 +178,10 @@ class Carbon(Trait):
         #FIXME handling of maintenance respiration starts here, but not sure it should be
         elif self.pool > maintenance_respiration:
             self.supply = maintenance_respiration
-            self.consume_pool(maintenance_respiration)
+            self.consume_pool(self.supply)
         elif self.reserve > maintenance_respiration:
             self.supply = maintenance_respiration
-            self.consume_reserve(maintenance_respiration)
+            self.consume_reserve(self.supply)
             self.reset_pool()
             # In this way, the c_reserve is used to satisfy the maintainance respiration demand. Then C_pool is
             # used to replenish C_reserve and then C_pool is set to 0. In other words, C_pool is depleted first
