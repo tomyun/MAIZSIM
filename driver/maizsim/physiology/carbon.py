@@ -262,10 +262,10 @@ class Carbon(Trait):
         #FIXME: there is a period after silking and before grain filling that not handled by this function
         #elif self.p.pheno.silking:
         elif not self.p.pheno.grain_filling:
-            def ratio(a, b, s):
-                r = a if s <= self._scale else b
-                return shoot * np.fmax(r, 0)
             s = self._scale
+            def ratio(a, b, t):
+                r = a if s <= t else b
+                return shoot * np.fmax(r, 0)
             leaf = shoot * 0.725 * np.fmax(0.725 - 0.775*s, 0)
             sheath = shoot * 0.275 * np.fmax(0.275 - 0.225*s, 0)
             #TODO check if stalk ratio is conditioned this way, otherwise reserve_ratio should be computed here
