@@ -215,7 +215,7 @@ class Carbon(Trait):
             shoot = fraction * Yg * c # gCH2O partitioned to shoot
             root = (1 - fraction) * Yg * c # gCH2O partitioned to roots
 
-        #HACK replaced by update_pool_with_root_residual()
+        #HACK replaced by update_root_pool_with_residual()
         # #TODO need output from 2DSOIL
         # diff = self.p.soil.pcrs - self.p.soil.pcrl:
         # # if in time step t-1, the value of pcrs is higher than that of pcrl
