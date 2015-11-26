@@ -406,6 +406,7 @@ class Radiation:
             Kb = self.projection_ratio()
 
             # total beam including scattered absorbed by canopy
+            #FIXME should the last part be multiplied by LAI like others?
             total_beam = I0_dr * (1 - exp(-sqrt(1 - s) * Kb * LAI)) / (sqrt(1 - s) * Kb)
             # non scattered beam absorbed by canopy
             nonscattered_beam = I0_dr * (1 - exp(-Kb * LAI)) / Kb
