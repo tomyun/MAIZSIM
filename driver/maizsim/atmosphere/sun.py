@@ -51,17 +51,17 @@ class Sun:
     def declination_angle(self):
         # Goudriaan 1977
         def goudriaan(d):
-            g = 2*pi*(d + 10) / 365
+            g = 2*pi * (d + 10)/365
             return -23.45 * cos(g)
 
         # Resenberg, blad, verma 1982
         def resenberg(d):
-            g = 2*pi*(d - 172) / 365
+            g = 2*pi * (d - 172)/365
             return 23.5 * cos(g)
 
         # Iqbal (1983) Pg 10 Eqn 1.3.3, and sundesign.com
         def iqbal(d):
-            g = 2*pi*(d + 284) / 365
+            g = 2*pi * (d + 284)/365
             return 23.45 * sin(g)
 
         # Campbell and Norman, p168
