@@ -89,7 +89,10 @@ class Sun:
         #standard_meridian = -120
         degree_per_hour = 360 / 24
         meridian = round(self.longitude / degree_per_hour) * degree_per_hour
-        return (self.longitude - meridian) / degree_per_hour
+        #FIXME use standard longitude sign convention
+        #return (self.longitude - meridian) / degree_per_hour
+        #HACK this assumes inverted longitude sign that MAIZSIM uses
+        return (meridian - self.longitude) / degree_per_hour
 
     @property
     def equation_of_time(self):
