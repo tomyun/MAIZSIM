@@ -83,19 +83,21 @@ class Radiation:
         return rho_h * (2*Kb / (Kb + Kd))
 
     #TODO better name?
-    def leaf_angle_coeff(self, elevation_angle):
+    def leaf_angle_coeff(self, zenith_angle):
+        elevation_angle = 90 - zenith_angle
         #FIXME need to prevent zero like sin_beta / cot_beta?
-        t = radians(elevation_angle)
+        a = radians(elevation_angle)
+        t = radians(zenith_angle)
         # leaf angle distribution parameter
         x = self.leaf_angle_factor
         return {
             # When Lt accounts for total path length, division by sin(elev) isn't necessary
-            LeafAngle.spherical: 1 / (2*sin(t)),
+            LeafAngle.spherical: 1 / (2*sin(a)),
             LeafAngle.horizontal: 1,
-            LeafAngle.vertical: 1 / (tan(t) * pi/2),
+            LeafAngle.vertical: 1 / (tan(a) * pi/2),
             LeafAngle.empirical: 0.667,
-            LeafAngle.diaheliotropic: 1 / sin(t),
-            LeafAngle.ellipsoidal: sqrt(x**2 + (1/tan(t))**2) / (x + 1.774 * (x+1.182)**-0.733),
+            LeafAngle.diaheliotropic: 1 / sin(a),
+            LeafAngle.ellipsoidal: sqrt(x**2 + tan(t)**2) / (x + 1.774 * (x+1.182)**-0.733),
         }[self.leaf_angle]
 
     #TODO make it @property if arg is not needed
@@ -105,8 +107,7 @@ class Radiation:
     def projection_ratio(self, zenith_angle=None):
         if zenith_angle is None:
             zenith_angle = self.sun.zenith_angle
-        elevation_angle = 90 - zenith_angle
-        Kb = self.leaf_angle_coeff(elevation_angle) * self.clumping
+        Kb = self.leaf_angle_coeff(zenith_angle) * self.clumping
         return Kb
 
     # diffused light ratio to ambient, itegrated over all incident angles from -90 to 90
