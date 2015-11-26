@@ -72,6 +72,14 @@ class Photosynthesis(Trait):
         return self.leaf_area_index_array.dot(array)
 
     @property
+    def sunlit_irradiance(self):
+        return self.radiation.irradiance_Q_sunlit() if self.radiation else 0
+
+    @property
+    def shaded_irradiance(self):
+        return self.radiation.irradiance_Q_shaded() if self.radiation else 0
+
+    @property
     def gross_array(self):
         return np.array([
             self.sunlit.A_gross,
