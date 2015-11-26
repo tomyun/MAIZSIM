@@ -53,7 +53,7 @@ class Plant:
     def initiate_primordia(self):
         self.nodal_units = [NodalUnit(self, rank=i+1) for i in range(self.primordia)]
         #FIXME should not allocate leaf mass here, otherwise accounting total seed mass gets complicated
-        [nu.leaf.import_carbohydrate(self.mass.initial_leaf) for nu in self.nodal_units]
+        #[nu.leaf.import_carbohydrate(self.mass.initial_leaf) for nu in self.nodal_units]
 
     def initiate_root(self):
         # here we calculate the mass of roots that were initialized in the soil model (read in with the element data)
