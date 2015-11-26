@@ -15,7 +15,8 @@ class Carbon(Trait):
         # assume it takes 20 days to exhaust seed C reserve
         #self.translocate_to_pool(self.reserve * (1/20) * (1/24) * (self.p.initials.timestep / 60))
         self.translocate_to_pool()
-        #FIXME the original code did not reset pool here
+        #FIXME the original code did not reset reserve here
+        self.reserve = self.pool
 
     @property
     def reserve_from_seed(self):
