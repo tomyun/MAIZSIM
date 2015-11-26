@@ -34,7 +34,9 @@ class Carbon(Trait):
         self.pool += amount
 
     def assimilate_to_pool(self, amount=None):
-        amount = self.p.photosynthesis.assimilation
+        #HACK should be the amount of carbohydrate (less), not CO2
+        #amount = self.p.photosynthesis.assimilation * (Weight.CH2O / Weight.CO2)
+        amount = self.p.photosynthesis.gross
         self.pool += amount
 
     #TODO merge consume_pool / reserve with a solid logic
