@@ -9,17 +9,23 @@ class TasselInitiation(Stage):
     def setup(self, juvenile_leaves=15):
         self._juvenile_leaves = juvenile_leaves
         self._appeared_leaves_on_finish = 0
+        self._temperature_recorder = GstRecorder(self.pheno)
 
     def tracker(self):
         return LeafInductionRate(
             pheno=self.pheno, #FIXME to access weather.day_length
-            temperature_recorder=GstRecorder(self.pheno),
             juvenile_leaves=self.juvenile_leaves,
         )
 
     def update(self, T):
         if self._tracker.empty():
             T = self.pheno.gst_recorder.rate
+        else:
+            #TODO implement on_first_update() interface?
+            #HACK use mean temperature tracker for induction period
+            #TODO use chained methods?
+            self._temperature_recorder.update(T)
+            T = self._temperature_recorder.rate
         super().update(T)
 
     @property
