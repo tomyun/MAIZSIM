@@ -1,9 +1,9 @@
-from .base import Tracker
+from .base import TemperatureTracker
 
 import numpy as np
 
-# note it's Tracker, not Accumulator
-class LeafInductionRate(Tracker):
+# note it's TemperatureTracker (timestep fixed to 1), not Tracker (hourly timestep) or Accumulator
+class LeafInductionRate(TemperatureTracker):
     def setup(self, pheno, juvenile_leaves):
         self.pheno = pheno
         self.juvenile_leaves = juvenile_leaves
