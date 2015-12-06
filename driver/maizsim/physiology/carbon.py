@@ -102,7 +102,7 @@ class Carbon(Trait):
     # this is the same as (PhyllochronsSinceTI - lvsAtTI / (totalLeaves - lvsAtTI))
     def _scale(self):
         # see Grant (1989), #of phy elapsed since TI/# of phy between TI and silking
-        return self.p.pheno.leaf_appearance_fraction_since_tassel_initiation
+        return self.p.pheno.grant_scale
 
     # based on McCree's paradigm, See McCree(1988), Amthor (2000), Goudriaan and van Laar (1994)
     # units very important here, be explicit whether dealing with gC, gCH2O, or gCO2

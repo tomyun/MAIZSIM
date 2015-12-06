@@ -44,11 +44,6 @@ class TasselInitiation(Stage):
     def leaves_to_induce(self):
         return self.rate
 
-    #FIXME is it really needed?
-    @property
-    def appeared_leaves_on_finish(self):
-        return self._appeared_leaves_on_finish
-
     def ready(self):
         #HACK should be negative when not ready
         return self._adult_leaves >= 0
