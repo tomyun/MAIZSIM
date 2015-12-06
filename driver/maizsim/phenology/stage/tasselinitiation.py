@@ -8,7 +8,7 @@ class TasselInitiation(Stage):
     #TODO manage juvenile/adult leaves in more general place (i.e. LeafInitiation/Appearance or Manager?)
     def setup(self, juvenile_leaves=15):
         self._juvenile_leaves = juvenile_leaves
-        self._appeared_leaves_on_finish = 0
+        self._appeared_leaves_on_finish = None
         self._temperature_recorder = GstRecorder(self.pheno)
 
     def tracker(self):
@@ -55,7 +55,7 @@ class TasselInitiation(Stage):
         #TODO clean up leaf count variables
         self.current_leaf = self.youngest_leaf = self.total_leaves = self.pheno.leaves_initiated
         #HACK save the appeared leaves when tassel initiation is done
-        self._appeared_leaves_on_finish = self.pheno.leaves_appeared
+        self._appeared_leaves_on_finish = self.pheno.leaf_appearance.rate
 
         GDD_sum = self.pheno.gdd_recorder.rate
         T_grow = self.pheno.gst_recorder.rate
