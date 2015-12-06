@@ -269,14 +269,14 @@ class Carbon(Trait):
             def ratio(a, b, t):
                 r = a if s <= t else b
                 return shoot * np.fmax(r, 0)
-            leaf = shoot * 0.725 * np.fmax(0.725 - 0.775*s, 0)
-            sheath = shoot * 0.275 * np.fmax(0.275 - 0.225*s, 0)
+            leaf = ratio(0.725 - 0.775*s, 0, s)
+            sheath = ratio(0.275 - 0.225*s, 0, s)
             #TODO check if stalk ratio is conditioned this way, otherwise reserve_ratio should be computed here
             #stalk = ratio(1.1*s, 2.33 - 0.6*np.exp(s), 0.85)
             stalk = ratio(1.1*s, 0, 0.85)
             reserve = ratio(0, 2.33 - 0.6*np.exp(s), 0.85)
             husk = ratio(np.exp(-7.75 + 6.6*s), 1 - 0.675*s, 1.0)
-            cob = ratio(-8.4 + 7.0*s, 0.625, 1.125)
+            cob = ratio(np.exp(-8.4 + 7.0*s), 0.625, 1.125)
             # give reserve part what is left over, right now it is too high
             if reserve > 0:
                 reserve = np.fmax(shoot - (leaf + sheath + stalk + husk + cob), 0)
