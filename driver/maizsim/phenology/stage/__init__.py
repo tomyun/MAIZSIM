@@ -12,4 +12,4 @@ from .maturity import Maturity
 from .ptitracker import PtiTracker
 from .recorder import GstRecorder, GddRecorder, GtiRecorder
 from .silk import Silk
-from .tasselinitiation import TasselInitiation
+from .tasselinitiation import TasselInitiation, PostTasselInitiation

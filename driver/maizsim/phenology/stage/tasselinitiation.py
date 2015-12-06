@@ -1,5 +1,5 @@
 from .base import Stage
-from ..tracker import LeafInductionRate
+from ..tracker import LeafInductionRate, BetaFunc
 from .recorder import GstRecorder
 
 import numpy as np
@@ -65,3 +65,25 @@ class TasselInitiation(Stage):
         GDD_sum = self.pheno.gdd_recorder.rate
         T_grow = self.pheno.gst_recorder.rate
         print("* Tassel initiation: GDDsum = {}, Growing season T = {}".format(GDD_sum, T_grow))
+
+
+class PostTasselInitiation(Stage):
+    def setup(self, R_max_LTAR=0.53):
+        self.R_max = R_max_LTAR
+
+    def tracker(self):
+        return BetaFunc(R_max=self.R_max)
+
+    def ready(self):
+        return self.pheno.tassel_initiation.over()
+
+    @property
+    def phyllochrons_between_tassel_initiation_and_silking(self):
+        return self.pheno.leaves_initiated - self.pheno.tassel_initiation._appeared_leaves_on_finish
+
+    @property
+    def rate(self):
+        if self.ready():
+            return super().rate / self.phyllochrons_between_tassel_initiation_and_silking
+        else:
+            return 0

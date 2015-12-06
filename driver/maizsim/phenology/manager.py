@@ -24,6 +24,7 @@ class Phenology:
         self.leaf_initiation = li = stage.LeafInitiation(self, R_max_LIR=R_max_LIR)
         self.leaf_appearance = la = stage.LeafAppearance(self, R_max_LTAR=R_max_LTAR)
         self.tassel_initiation = ti = stage.TasselInitiation(self, juvenile_leaves=juvenile_leaves)
+        self.post_tassel_initiation = pti = stage.PostTasselInitiation(self, R_max_LTAR=R_max_LTAR)
         self.silk = s = stage.Silk(self, R_max_LTAR=R_max_LTAR, phyllochrons=phyllochrons_to_silk)
         self.grain_filling_initiation = gfi = stage.GrainFillingInitiation(self)
         self.mature = m1 = stage.Mature(self, GDD_rating=GDD_rating)
@@ -35,7 +36,7 @@ class Phenology:
 
         self.stages = [
             gstr, gddr, gtir,
-            g, e, li, la, ti, s, gfi, m1, m2, d,
+            g, e, li, la, ti, pti, s, gfi, m1, m2, d,
             ptit,
         ]
 
