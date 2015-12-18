@@ -153,14 +153,14 @@ class Plant:
         self.carbon.make_supply()
 
         #FIXME just for validating total imports of carbohydrate
-        total_demand = 0
+        # total_demand = 0
 
-        for i in range(self.pheno.leaves_initiated):
-            nu = self.nodal_units[i]
-
-            # here we can allocate leaf part among leaves
-            # need to find demand first
-            leaf = nu.leaf
+        # for i in range(self.pheno.leaves_initiated):
+        #     nu = self.nodal_units[i]
+        #
+        #     # here we can allocate leaf part among leaves
+        #     # need to find demand first
+        #     leaf = nu.leaf
 
             #HACK setting SLA this way is not permitted in the new implementation; this was unused code anyways
             # # Update SLA based on current shoot growth rate. Do this for every leaf
@@ -176,16 +176,61 @@ class Plant:
             # update leaf's mass
             # first find the number of growing leaves. This is saved as a variable in the [0] nodal unit
 
-            if not leaf.dead:
-                # Adjusting C allocation based on leaf size if not aging.
-                # doing it based on current growth rate is more mechanistic but seems to have issue now. To revisit. SK
-                demand = leaf.potential_area / self.area.potential_leaf * self.carbon.leaf
-                # carbon allocated according to growth rate
-                #demand = leaf.relative_area_increase / self.area.relative_leaf_increase * self.carbon.leaf
-                total_demand += demand
+            # if not leaf.dead:
+            #     # Adjusting C allocation based on leaf size if not aging.
+            #     # doing it based on current growth rate is more mechanistic but seems to have issue now. To revisit. SK
+            #     demand = leaf.potential_area / self.area.potential_leaf * self.carbon.leaf
+            #     # carbon allocated according to growth rate
+            #     total_demand += demand
+            #     leaf.import_carbohydrate(demand)
 
-                leaf.import_carbohydrate(demand)
-        #assert total_demand == self.carbon.leaf
+        def weight(l):
+            if not l.dead:
+                # constant weight
+                return 1
+                # weighted around growing point (shoot apical meristem)
+                #return 1 / (1 + (self.pheno.leaves_initiated - l.rank)**2)
+            else:
+                return 0
+
+        def sink_strength(l):
+            # Adjusting C allocation based on leaf size if not aging.
+            # doing it based on current growth rate is more mechanistic but seems to have issue now. To revisit. SK
+            return l.potential_area
+
+            #return l.relative_area_increase
+            #return l.area
+            #return l.area / self.area.leaf + l.relative_area_increase
+            #return l.green_area / self.area.green_leaf + l.relative_area_increase
+            #return l.green_area / self.area.leaf + l.relative_area_increase
+            #HACK: sensitivty analysis
+            #return 0.0 * l.area / self.area.leaf + l.relative_area_increase
+            #return 0.5 * l.area / self.area.leaf + l.relative_area_increase
+            #return 1.0 * l.area / self.area.leaf + l.relative_area_increase
+            #return 1.5 * l.area / self.area.leaf + l.relative_area_increase
+            #return 2.0 * l.area / self.area.leaf + l.relative_area_increase
+
+        def normalized(f):
+            if callable(f):
+                a = np.array([f(l) for l in leaves])
+            else:
+                a = f
+            a = a / a.sum()
+            if not all(np.isfinite(a)):
+                a = np.ones_like(a) / len(a)
+            return a
+
+        def multiplied(w, s):
+            return normalized(normalized(w) * normalized(s))
+
+        leaves = [nu.leaf for nu in self.nodal_units]
+        weights = multiplied(weight, sink_strength)
+        np.testing.assert_almost_equal(sum(weights), 1)
+        demands = weights * self.carbon.leaf
+        total_demand = demands.sum()
+
+        # carbon allocated according to growth rate
+        [l.import_carbohydrate(d) for l, d in zip(leaves, demands)]
 
         #FIXME what is the difference between import_carbohydrate()?
         #self.root.actual_carbon_increment = self.carbon.root

@@ -252,8 +252,15 @@ class Leaf(Organ):
 
     @property
     def relative_area_increase(self):
+        #HACK meaning changed from 'relative to other leaves' (spatial) to 'relative to previous state' (temporal)
         # adapted from CPlant::calcPerLeafRelativeAreaIncrease()
-        return self.potential_area_increase / self.nodal_unit.plant.potential_leaf_area_increase
+        #return self.potential_area_increase / self.nodal_unit.plant.area.potential_leaf_increase
+        da = self.actual_area_increase
+        a = self.area - da
+        if a > 0:
+            return da / a
+        else:
+            return 0
 
     @property
     # actual area

@@ -271,6 +271,9 @@ class Carbon(Trait):
                 return shoot * np.fmax(r, 0)
             leaf = ratio(0.725 - 0.775*s, 0, s)
             sheath = ratio(0.275 - 0.225*s, 0, s)
+            #HACK: extended growth period for testing different allocation pattern with Maryland05 dataset
+            #leaf = shoot * np.fmax(0.725 - 0.775*s*0.7, 0)
+            #sheath = shoot * np.fmax(0.275 - 0.225*s*0.7, 0)
             #TODO check if stalk ratio is conditioned this way, otherwise reserve_ratio should be computed here
             #stalk = ratio(1.1*s, 2.33 - 0.6*np.exp(s), 0.85)
             stalk = ratio(1.1*s, 0, 0.85)
