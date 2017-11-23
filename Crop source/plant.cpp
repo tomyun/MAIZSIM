@@ -178,6 +178,7 @@ void CPlant::update(const TWeather & weather, double PredawnLWP)
 
 		if(nodalUnit[1].get_leaf()->isInitiated() && !nodalUnit[1].get_leaf()->isAppeared())
 		{
+	        calcPerLeafRelativeAreaIncrease(); // added by KDY
 			calcMaintRespiration(weather);
 			C_allocation(weather);
 			seedMass = __max(0.0,seedMass-C_supply); // need setmass
@@ -255,10 +256,8 @@ void CPlant::update(const TWeather & weather, double PredawnLWP)
 			}
 		}
 
-		
-        calcPerLeafRelativeAreaIncrease(); // calculate relative area increases for leaves 
-
     	calcPotentialLeafArea();
+        calcPerLeafRelativeAreaIncrease(); // calculate relative area increases for leaves
 		calcGreenLeafArea();
 		calcActualGreenLeafArea();
 		leaf_N_content = leaf_N/(this->greenLeafArea/10000); //Calculate leaf nitrogen content of per unit area; 
@@ -301,6 +300,7 @@ void CPlant::update(const TWeather & weather, double PredawnLWP)
 		else
 		{
             C_pool += assimilate*CH2O_MW/CO2_MW; // convert from grams CO2 to grams carbohydrate (per hour per plant)
+            //cout << "assim = " << assimilate*CH2O_MW/CO2_MW << endl;
 		}
 		setMass();
  	}
@@ -437,6 +437,16 @@ void  CPlant::calcPerLeafRelativeAreaIncrease()
 			if (PotentialLeafAreaIncrease>0)
 			    {
 				    RelativeLeafAreaIncrease=nodalUnit[i].get_leaf()->get_potentialAreaIncrease()/PotentialLeafAreaIncrease;
+                    //RelativeLeafAreaIncrease=nodalUnit[i].get_leaf()->get_potentialAreaIncrease()/nodalUnit[i].get_leaf()->get_area(); // added by KDY
+                    /*
+                    double da = nodalUnit[i].get_leaf()->get_potentialAreaIncrease();
+                    double a = nodalUnit[i].get_leaf()->get_area() - da;
+                    if (a > 0) {
+                        RelativeLeafAreaIncrease = da / a;
+                    } else {
+                        RelativeLeafAreaIncrease = 1;
+                    }
+                    */
 					nodalUnit[i].get_leaf()->set_RelativeAreaIncrease(RelativeLeafAreaIncrease);
     			}
     	}
@@ -848,7 +858,19 @@ void CPlant::C_allocation(const TWeather & w)
 // first find the number of growing leaves. This is saved as a variable in the [0] nodal unit
    double LeafPartSum=leafPart;
    double PCarboDemandPerLeaf;
-   
+
+    double total_relative_area_increase = 0;
+    double total_allocatable_leaves = 0;
+    for (int i = develop->get_LvsInitiated(); i >=1  ; i--) {
+        CNodalUnit &nu = nodalUnit[i];
+        CLeaf *l = nu.get_leaf();
+        if (nu.isInitiated() && !l->isDead()) {
+            total_relative_area_increase += l->get_RelativeAreaIncrease();
+            total_allocatable_leaves++;
+        }
+    }
+
+
    for (int i = develop->get_LvsInitiated(); i >=1  ; i--)
    {
 	   //need to find demand first
@@ -875,6 +897,13 @@ void CPlant::C_allocation(const TWeather & w)
                 totLA = calcPotentialLeafArea();
 				PCarboDemandPerLeaf=__max(0.0, leaf->get_potentialArea()/totLA*leafPart); //Adjusting C allocation based on leaf size if not aging. doing it based on current growth rate is more mechanistic but seems to have issue now. To revisit. SK
 //			   PCarboDemandPerLeaf=__max(0.0, leaf->get_RelativeAreaIncrease()*leafPart); // carbon allocated according to growth rate
+                // KDY: try different carbon partitioning schemes
+                /*
+                if (total_relative_area_increase > 0) {
+                    PCarboDemandPerLeaf=__max(0.0, leaf->get_RelativeAreaIncrease()/total_relative_area_increase*leafPart);
+                }
+                //*/
+                //PCarboDemandPerLeaf = 1 / total_allocatable_leaves * leafPart;
 
 				if (LeafPartSum >= PCarboDemandPerLeaf)
 			   {
@@ -905,6 +934,8 @@ void CPlant::C_allocation(const TWeather & w)
 //   if (w.time == 0.5) std::cout << "adding CH2O: " << grainPart << " to grain " << endl;
 //   if (w.time == 0.5) std::cout << "Sum of part coeff is " << partSum << " and shoot CH2O is " << shootPart <<  endl;
     //cout <<C_pool << " " << C_ReserveLeaf <<endl;
+    //cout << w.jday << "-" << w.time << endl;
+    //cout << " - pool = " << C_pool << " reserve = " << C_reserve << " supply " << C_supply << endl;
 }
 
 
