@@ -44,6 +44,8 @@ class Photosynthesis(Trait):
         # Calculating transpiration and photosynthesis without stomatal control Y
         # call SetVal_NC()
 
+        #import pdb; pdb.set_trace()
+
         # Calculating transpiration and photosynthesis with stomatal controlled by leaf water potential LeafWP Y
         sunlit_weather = self.p.weather.copy()
         sunlit_weather.PFD = self.radiation.irradiance_Q_sunlit()

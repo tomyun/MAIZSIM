@@ -56,6 +56,8 @@ class Mass(Trait):
 
     @property
     def total(self):
+        #HACK include mobilized carbon pool (for more accurate mass under germination)
+        #return self.shoot + self.root + self.p.carbon.pool
         return self.shoot + self.root
 
     # this will only be used for total leaf area adjustment.

@@ -207,6 +207,7 @@ class Driver:
 
     def _update_nitrogen_uptake(self, S):
         # Note that SIncrSink has been multiplied by time step in the solute uptake routing the 1000 scales from ug to mg.
+        #print("sincrsink = {}".format(S.sincrsink))
         self.nitrogen_uptake += S.sincrsink / 1e6
 
         if self.nitrogen_uptake > 0:
@@ -363,10 +364,11 @@ class Driver:
         # Assumes that germination takes place about halfway through the sowing date.
         #if 0.49 <= w.time <= 0.51:
         #    print(w.jday)
-        timer = self.controller.timer
-        if timer.time.hour == 12:
-            #HACK need helper method?
-            print("{} ({})".format(timer.time, timer.julian_day_from_datetime(timer.time)))
+        # timer = self.controller.timer
+        # if timer.time.hour == 12:
+        #     #HACK need helper method?
+        #     print("{} ({})".format(timer.time, timer.julian_day_from_datetime(timer.time)))
+        pass
 
     def _handle_emerged(self, S):
         # pass appropriate data to 2DSOIL file structures
@@ -377,6 +379,7 @@ class Driver:
         shoot = self.plant.carbon.shoot
         #ii = self.initinfo
 
+        #FIXME why we can assure it only happens at night?
         # this assures the pool is only used at night
         # minimizes complexity when pcrq has a value
         # since we have to add leftover carbo from pcrq to the shoot
@@ -504,9 +507,9 @@ class Driver:
             T.tnext[self.mod_num - 1] = 1e12
 
             # if matured points to nothing
-            self.controller = None
+            #self.controller = None
 
-            T.runflag = 0
+            #T.runflag = 0
         else:
             T.tnext[self.mod_num - 1] = T.time + self.period
             self.water_uptake = 0.
@@ -543,6 +546,15 @@ class Driver:
             self._process()
             self._postprocess()
 
+            # import datetime
+            # if self.controller.timer.time >= datetime.datetime(2007, 5, 20):
+            #     return
+            print('{}'.format(T.time))
+            if T.time >= self.initials.end_day:
+                self.controller.crop_output.to_csv('/Users/tomyun/Desktop/crop.csv')
+                self.controller.leaf_output.to_csv('/Users/tomyun/Desktop/leaf.csv')
+
+
 if __name__ == '__main__':
-    driver = Driver()
+    driver = Driver('2005-fieldExp.dat')
     driver.run()

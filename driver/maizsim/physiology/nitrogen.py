@@ -27,6 +27,7 @@ class Nitrogen(Trait):
             #FIXME self.initial_pool or just pool?
             #pool = np.fmin(0.063 * shoot_mass, self.initial_pool)
             pool = np.fmin(0.063 * shoot_mass, pool)
+        #print("nitrogen pool = {}".format(pool))
         self._pool = pool
 
     @property

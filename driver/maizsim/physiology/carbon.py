@@ -34,9 +34,14 @@ class Carbon(Trait):
         self.pool += amount
 
     def assimilate_to_pool(self, amount=None):
+        # import datetime
+        # if self.p.weather.time >= datetime.datetime(2007, 6, 3):
+        #     import pdb; pdb.set_trace()
+
         #HACK should be the amount of carbohydrate (less), not CO2
         #amount = self.p.photosynthesis.assimilation * (Weight.CH2O / Weight.CO2)
         amount = self.p.photosynthesis.gross
+        print("assim = {}".format(amount))
         self.pool += amount
 
     #TODO merge consume_pool / reserve with a solid logic
@@ -50,6 +55,8 @@ class Carbon(Trait):
     def reset_pool(self):
         # reset shorterm C_pool to zero at midnight, needs to be more mechanistic
         #FIXME need np.fmax(0, self.pool)?
+        if self.pool < 0:
+            import pdb; pdb.set_trace()
         self.reserve += self.pool
         self.pool = 0
 
@@ -161,6 +168,7 @@ class Carbon(Trait):
                 self.consume_reserve(self.supply)
             else:
                 #TODO what would happen if no reserve available?
+                import pdb; pdb.set_trace()
                 pass
         elif self.reserve > self.demand > 0:
             # conversion and translocation from long term reserve should be less efficient, apply nother glucose conversion factor
@@ -192,6 +200,7 @@ class Carbon(Trait):
         else:
             self.reset_pool()
             self.supply = np.fmin(self.reserve, maintenance_respiration)
+            #FIXME no need to consume supply from reserve?
 
         #HACK handle remaining reserve here
         # everything is carbohydrate now

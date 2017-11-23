@@ -42,6 +42,7 @@ class Stomata:
 
         self.update_boundary_layer(weather.wind)
         self.update_stomata(LWP, weather.CO2, A_net, weather.RH, T_leaf)
+        print("       gb = {}, gs = {}".format(self.gb, self.gs))
 
     def update_boundary_layer(self, wind):
         # maize is an amphistomatous species, assume 1:1 (adaxial:abaxial) ratio.
@@ -62,6 +63,7 @@ class Stomata:
         return self.gb
 
     # stomatal conductance for water vapor in mol m-2 s-1
+    #FIXME T_leaf not used
     def update_stomata(self, LWP, CO2, A_net, RH, T_leaf):
         # params
         g0 = self.g0
@@ -114,7 +116,7 @@ class Stomata:
         m = (1 + np.exp(sf * phyf)) / (1 + np.exp(sf * (phyf - LWP)))
         return m
 
-    def total_conductance_h20(self):
+    def total_conductance_h2o(self):
         gs = self.gs
         gb = self.gb
         return gs * gb / (gs + gb)
@@ -289,6 +291,7 @@ class C4:
         Ac = self._enzyme_limited_photosynthesis_rate(Cm, T_leaf)
         Aj = self._transport_limited_photosynthesis_rate(I2, Cm, T_leaf)
         A_net = self._combined_photosynthesis_rate(Ac, Aj)
+        print("   Ac = {}, Aj = {}, A_net = {}".format(Ac, Aj, A_net))
         return A_net
 
 
@@ -349,7 +352,9 @@ class PhotosyntheticLeaf:
         def cost(x):
             I2 = light()
             A_net0 = x[0]
+            print("A_net0 = {}".format(A_net0))
             Cm0 = co2_mesophyll(A_net0)
+            print("I2 = {}, Cm0 = {}, T_leaf = {}".format(I2, Cm0, T_leaf))
             A_net1 = self.c4.photosynthesize(I2, Cm0, T_leaf)
             #Cm1 = co2_mesophyll(A_net1)
             #FIXME can we just difference between A_net?
@@ -358,8 +363,10 @@ class PhotosyntheticLeaf:
 
         #FIXME avoid passing self.stomata object to optimizer
         # iteration to obtain Cm from Ci and A, could be re-written using more efficient method like newton-raphson method
+        #print(" - min st {}".format(self.A_net))
         res = scipy.optimize.minimize(cost, [self.A_net], options={'disp': False})
         self.A_net = res.x[0]
+        #print(" - min st {}".format(self.A_net))
 
         #HACK ensure stomata state matches with the final A_net
         update_stomata(self.A_net)
@@ -388,7 +395,7 @@ class PhotosyntheticLeaf:
         Jw = self.ET_supply
 
         gha = self.stomata.gb * (0.135 / 0.147) # heat conductance, gha = 1.4*.135*sqrt(u/d), u is the wind speed in m/s} Mol m-2 s-1 ?
-        gv = self.stomata.total_conductance_h20()
+        gv = self.stomata.total_conductance_h2o()
         gr = 4 * epsilon * sbc * Tk**3 / Cp * 2 # radiative conductance, 2 account for both sides
         ghr = gha + gr
         thermal_air = epsilon * sbc * Tk**4 * 2 # emitted thermal radiation
@@ -418,15 +425,17 @@ class PhotosyntheticLeaf:
             T_leaf1 = self.update_temperature()
             return (T_leaf0 - T_leaf1)**2
 
+        #print("min st {}".format(self.temperature))
         res = scipy.optimize.minimize(cost, [self.weather.T_air], options={'disp': False})
         self.temperature = res.x[0]
+        #print("min end {}".format(self.temperature))
 
         #HACK ensure leaf state matches with the final temperature
         self.optimize_stomata(self.temperature)
 
     @property
     def ET(self):
-        gv = self.stomata.total_conductance_h20()
+        gv = self.stomata.total_conductance_h2o()
         ea = VaporPressure.ambient(self.weather.T_air, self.weather.RH)
         es_leaf = VaporPressure.saturation(self.temperature)
         ET = gv * ((es_leaf - ea) / self.weather.P_air) / (1 - (es_leaf + ea) / self.weather.P_air)

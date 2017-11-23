@@ -18,7 +18,7 @@ class Controller:
         self.show_title()
         self.show_variety()
         # Timer class gets stepsize in hours
-        self.timer = Timer.from_julian_day(self.initials.begin_day, self.initials.timestep / 60)
+        #self.timer = Timer.from_julian_day(self.initials.begin_day, self.initials.timestep / 60)
         #TODO load up atmosphere.Weather here?
         #dt modified this after modifying code to use julian day
         #self.weather =
@@ -41,8 +41,10 @@ class Controller:
         print("Sowing day: {}".format(sowing_day))
 
     def run(self, weather, soil):
+        #print("{} ({})".format(self.timer.time, Timer.julian_day_from_datetime(self.timer.time)))
+        print("@ {} ({})".format(weather.time, Timer.julian_day_from_datetime(weather.time)))
+
         #FIXME no need to check range here, since the current weather is updated every iteration?
-        #if (weather[iCur].jday >= initInfo.sowingDay && weather[iCur].jday <= lastDayOfSim)
         self.plant.update(weather, soil)
 
         #dt added ability to output daily based on 2dsoil output
@@ -57,7 +59,7 @@ class Controller:
                 self.update_leaf_output(weather, soil)
 
         # update timer step forward
-        self.timer.tick()
+        #self.timer.tick()
 
     def setup_crop_output(self):
         columns = [

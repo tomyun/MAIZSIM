@@ -49,7 +49,7 @@ class Leaf(Organ):
 
     # leaf lamina width to length ratio
     @property
-    def width_to_length_ratio(self):
+    def length_to_width_ratio(self):
         return 0.106
 
     # leaf area coeff with respect to L*W (A_LW)
@@ -92,7 +92,7 @@ class Leaf(Organ):
     @lru_cache()
     def maximum_width(self):
         # Fournier and Andrieu(1998) Pg242 YY
-        return self.maximum_length * self.width_to_length_ratio
+        return self.maximum_length * self.length_to_width_ratio
 
     #TODO better name, shared by growth_duration and pontential_area
     @lru_cache()
@@ -197,6 +197,7 @@ class Leaf(Organ):
 
     #TODO confirm if it really means the elongation rate
     @property
+    #FIXME duplicate property name!
     def elongation_rate(self):
         t = self.elongation_age
         t_e = self.growth_duration
@@ -219,7 +220,10 @@ class Leaf(Organ):
         #maximum_expansion_rate = T_effect * self.potential_area * (2*t_e - t_m) / (t_e * (t_e - t_m)) * (t_m / t_e)**(t_m / (t_e - t_m))
         # potential leaf area increase without any limitations
         #return np.fmax(0, maximum_expansion_rate * np.fmax(0, (t_e - self.elongation_age) / (t_e - t_m) * (self.elongation_age / t_m)**(t_m / (t_e - t_m))) * timestep)
-        return self.temperature_effect * self.elongation_rate * timestep * self.potential_area
+        if not self.mature:
+            return self.temperature_effect * self.elongation_rate * timestep * self.potential_area
+        else:
+            return 0
 
     # create a function which simulates the reducing in leaf expansion rate
     # when predawn leaf water potential decreases. Parameterization of rf_psil
@@ -387,6 +391,7 @@ class Leaf(Organ):
     def expand(self):
         if self.appeared and not self.mature:
             self._elongation_tracker.update(self.p.pheno.temperature)
+            #HACK actual_area_increase should be already included in self.area
             self._area_tracker.update(self.actual_area_increase)
 
     def senescence(self):

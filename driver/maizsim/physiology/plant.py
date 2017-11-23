@@ -139,6 +139,8 @@ class Plant:
             self.allocate_carbon()
             #self.update_mass()
 
+        print("pool = {}, reserve = {}, supply = {}".format(self.carbon.pool, self.carbon.reserve, self.carbon.supply))
+
 
     ###########
     # Process #
@@ -234,6 +236,7 @@ class Plant:
 
         #FIXME what is the difference between import_carbohydrate()?
         #self.root.actual_carbon_increment = self.carbon.root
+        #FIXME why is this needed? unlike original MAIZSIM, it seems to get positive values that make sense even before emergence
         # before emergence root weight has been initialized. Just dump this carbon for now.
         if self.pheno.emerged:
             self.root.import_carbohydrate(self.carbon.root)
