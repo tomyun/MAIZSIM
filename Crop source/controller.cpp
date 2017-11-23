@@ -117,6 +117,16 @@ void CController::initialize()
 			<< setw(8) << "Pg"
 			<< setw(10) << "Respir"
 			<< setw(8) << "av_gs"
+			<< setw(12) << "sunlit_LAI"
+			<< setw(12) << "shaded_LAI"
+			<< setw(12) << "sunlit_PFD"
+			<< setw(12) << "shaded_PFD"
+			<< setw(12) << "sunlit_An"
+			<< setw(12) << "shaded_An"
+			<< setw(12) << "sunlit_Ag"
+			<< setw(12) << "shaded_Ag"
+			<< setw(12) << "sunlit_gs"
+			<< setw(12) << "shaded_gs"
 			<< setw(9) << "VPD"
 			<< setw(10) << "Nitr"
 			<< setw(10) << "N_Dem"
@@ -126,7 +136,7 @@ void CController::initialize()
 		    << setw(8) << "totalDM"
 			<< setw(8) << "shootDM"
 			<< setw(8) << "earDM"
-			<< setw(8) << "GrleafDM"
+			<< setw(10) << "GrleafDM"
 			<< setw(8) << "DrpLfDM"
 			<< setw(8) << "stemDM"
 			<< setw(8) << "rootDM"
@@ -316,6 +326,16 @@ void CController::outputToCropFile()
 				<< setw(8) << setprecision(4) << plant->get_Pg()    
 				<< setw(8) << setprecision(4) << plant->get_MaintenanceRespiration() //dt 03/2011 added to better calc mass balance
 				<< setw(8) << setprecision(4) << av_gs  //return average stomatal conductance Yang 10/31/06
+				<< setw(11) << setprecision(7) << plant->sunlit_LAI << " "
+				<< setw(11) << setprecision(7) << plant->shaded_LAI << " "
+				<< setw(11) << setprecision(7) << plant->sunlit_PFD << " "
+				<< setw(11) << setprecision(7) << plant->shaded_PFD << " "
+				<< setw(11) << setprecision(7) << plant->sunlit_A_net << " "
+				<< setw(11) << setprecision(7) << plant->shaded_A_net << " "
+				<< setw(11) << setprecision(7) << plant->sunlit_A_gross << " "
+				<< setw(11) << setprecision(7) << plant->shaded_A_gross << " "
+				<< setw(11) << setprecision(7) << plant->sunlit_gs << " "
+				<< setw(11) << setprecision(7) << plant->shaded_gs << " "
 			    << setw(9) << setprecision(3) << vpd
 				<< setw(10) << setprecision(4) << plant->get_N()
 				<< setw(10) << setprecision(4) << plant->get_CumulativeNitrogenDemand()
@@ -325,7 +345,7 @@ void CController::outputToCropFile()
 				<< setw(8) << setprecision(3) << plant->get_mass()
 				<< setw(8) << setprecision(3) << plant->get_shootMass()  //masses are grams per plant
 				<< setw(8) << setprecision(2) << plant->get_earMass()
-				<< setw(8) << setprecision(2) << plant->get_leafMass()
+				<< setw(10) << setprecision(2) << plant->get_leafMass()
 				<< setw(8) << setprecision(2) << plant->get_DroppedLeafMass()
 				<< setw(8) << setprecision(2) << plant->get_stemMass()
 				<< setw(8) << setprecision(3) << plant->get_rootMass()
