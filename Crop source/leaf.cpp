@@ -83,6 +83,7 @@ void CLeaf::calc_dimensions(CDevelopment *dv)
 	                                                                    //equa 8(b)(Actually eqn 6? - eqn 8 deals with leaf age - DT)
 	                                                                   //in Fournier and Andrieu(1998). YY
 	growthDuration = ptnLength/maxElongRate; // shortest possible linear phase duration in physiological time (days instead of GDD) modeified form of equa 8(a)Fournier and Andrieu(1998)
+	growthDuration *= 1.5; // growth duration (t_e) when t_pk (t_m) is half t_e, derived from Eq. 9 of Yin (2003) (2017-06-05: KDY)
     phase1Delay = __max(0.0, -5.16+1.94*rank); //not used in MAIZSIM because LTAR is used to initiate leaf growth. Fournier's value : -5.16+1.94*rank;equa 11 Fournier and Andrieu(1998) YY, This is in plastochron unit
 
 	double W_max = L_max*WLRATIO;//Fournier and Andrieu(1998) Pg242 YY
