@@ -228,11 +228,12 @@ double CGas_exchange::gsw(double pressure)  // stomatal conductance for water va
 		
 	double temp = set_leafpEffect(pressure);
 	Gamma = 10.0;
-    Cs = CO2 - (1.37*A_net/gb); // surface CO2 in mole fraction
+	double gbc = gb / 1.37;
+    Cs = CO2 - (A_net/gbc); // surface CO2 in mole fraction
 	    if (Cs <= Gamma) Cs = Gamma + 1;
         aa = temp*Parms.g1*A_net/Cs;
-        bb = Parms.g0+gb-(temp*Parms.g1*A_net/Cs);
-        cc = (-RH*gb)-Parms.g0;
+        bb = Parms.g0+gbc-(temp*Parms.g1*A_net/Cs);
+        cc = (-RH*gbc)-Parms.g0;
         hs = QuadSolnUpper(aa,bb,cc);
 	if (hs > 1) hs = 1; else if (hs <= 0.30) hs = 0.30;    //preventing bifurcation
     Ds = (1-hs)*Es(Tleaf); // VPD at leaf surface 
